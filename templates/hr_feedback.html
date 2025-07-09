@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>HR - Feedback Panel</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-900 text-white min-h-screen p-6">
+  <h2 class="text-3xl text-blue-400 font-bold mb-6">🗂️ Leave Feedback Responses</h2>
+
+  {% for fb in feedbacks %}
+    <div class="bg-gray-800 p-4 mb-6 rounded shadow">
+      <p class="text-sm text-gray-300 mb-2">🕐 Submitted at: {{ fb[3] }}</p>
+      <p class="text-lg mb-3">💬 <strong>Message:</strong> {{ fb[1] }}</p>
+
+      {# ✅ This is your updated section #}
+      {% if fb[2] %}
+        <p class="text-green-400"><strong>✅ Response:</strong> {{ fb[2] }}</p>
+        {% if fb[4] %}
+          <p class="text-sm text-gray-400">
+            📅 Responded at: {{ fb[4].strftime('%Y-%m-%d %H:%M:%S.%f')[:-4] }}
+          </p>
+        {% endif %}
+      {% else %}
+        <form method="POST">
+          <input type="hidden" name="feedback_id" value="{{ fb[0] }}">
+          <label for="response" class="block text-sm mb-1">✍️ Respond:</label>
+          <textarea name="response" required class="w-full bg-gray-700 p-2 rounded mb-2"></textarea>
+          <button type="submit" class="bg-green-500 hover:bg-green-600 text-white py-1 px-4 rounded">
+            Send Response
+          </button>
+        </form>
+      {% endif %}
+    </div>
+  {% endfor %}
+
+  <div class="mt-4">
+    <a href="{{ url_for('hr_portal') }}" class="text-blue-400 hover:underline">← Back to HR Portal</a>
+  </div>
+</body>
+</html>

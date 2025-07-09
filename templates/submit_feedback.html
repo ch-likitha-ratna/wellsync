@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Submit Feedback</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-900 text-white min-h-screen flex items-center justify-center">
+  <div class="bg-gray-800 p-6 rounded shadow-md w-full max-w-lg">
+    <h2 class="text-2xl font-bold text-blue-400 mb-4">📋 Submit Anonymous Feedback</h2>
+    
+    <form method="POST">
+      <label for="message" class="block mb-2 text-sm">Your Message:</label>
+      <textarea name="message" required rows="6"
+                class="w-full p-3 bg-gray-700 text-white rounded mb-4"
+                placeholder="Enter your anonymous feedback..."></textarea>
+      
+      <button type="submit"
+              class="w-full bg-blue-500 hover:bg-blue-600 text-white py-2 rounded">
+        Submit Feedback
+      </button>
+    </form>
+
+    <!-- 📄 View Responses Link -->
+    <div class="text-center mt-4">
+      <a href="{{ url_for('view_feedback_responses') }}" class="text-blue-300 hover:underline">
+        📄 View My Feedback & HR Responses
+      </a>
+    </div>
+
+    <!-- Back to Portal Link -->
+    <div class="mt-2 text-sm text-blue-400 text-center">
+      <a href="{{ url_for('employee_portal') }}" class="hover:underline">← Back to Portal</a>
+    </div>
+  </div>
+</body>
+</html>

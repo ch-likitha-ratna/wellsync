@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Your Feedback Responses</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-900 text-white min-h-screen p-6">
+  <h2 class="text-2xl font-bold text-blue-400 mb-6">📄 Your Feedback & HR Responses</h2>
+
+  {% for fb in feedbacks %}
+    <div class="bg-gray-800 p-4 mb-6 rounded shadow">
+      <p class="text-sm text-gray-400 mb-2">🕒 Submitted at: {{ fb[3] }}</p>
+      <p class="text-lg mb-2">💬 <strong>Message:</strong> {{ fb[1] }}</p>
+
+      {% if fb[2] %}
+        <p class="text-green-400">✅ <strong>HR Response:</strong> {{ fb[2] }}</p>
+      {% else %}
+        <p class="text-yellow-400">⌛ Awaiting HR Response</p>
+      {% endif %}
+    </div>
+  {% endfor %}
+
+  <div class="mt-4">
+    <a href="{{ url_for('employee_portal') }}" class="text-blue-400 hover:underline">← Back to Portal</a>
+  </div>
+</body>
+</html>

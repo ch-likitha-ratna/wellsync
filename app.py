@@ -451,17 +451,15 @@ def request_leave():
 
 @app.route('/hr/leave-requests', methods=['GET', 'POST'])
 def hr_leave_requests():
-    # ✅ Check if user email is in session and belongs to HR
     if 'user' not in session:
         return redirect(url_for('signin'))
 
     email = session['user'].get('email')
 
-    # Connect to DB and check if this email is an HR user
     conn = psycopg2.connect(
         dbname="NexIQon",
         user="sanjay",
-        password="",  # Use real password
+        password="",  # Use proper credentials
         host="localhost",
         port="5432"
     )
@@ -473,14 +471,20 @@ def hr_leave_requests():
         flash('Access denied: HR only', 'error')
         return redirect(url_for('signin'))
 
-    # ✅ Handle POST (approve/reject leave)
+    # ✅ Process Approve/Reject Actions via POST
     if request.method == 'POST':
         req_id = request.form['req_id']
         action = request.form['action']
         cur.execute("UPDATE leave_requests SET status = %s WHERE id = %s", (action, req_id))
         conn.commit()
 
-    # ✅ Fetch all leave requests
+        cur.close()
+        conn.close()
+
+        # ✅ Redirect after POST to avoid re-submission / stale view
+        return redirect(url_for('hr_leave_requests'))
+
+    # ✅ Fetch Updated Requests
     cur.execute("SELECT * FROM leave_requests ORDER BY submitted_at DESC")
     requests = cur.fetchall()
     cur.close()
@@ -509,6 +513,20 @@ def submit_leave_request():
             )
             cur = conn.cursor()
 
+            # ✅ Check how many approved leaves the employee already has this month
+            cur.execute("""
+                SELECT COUNT(*) FROM leave_requests 
+                WHERE employee_email = %s
+                  AND EXTRACT(MONTH FROM leave_date) = EXTRACT(MONTH FROM CURRENT_DATE)
+                  AND EXTRACT(YEAR FROM leave_date) = EXTRACT(YEAR FROM CURRENT_DATE)
+                  AND status = 'Approved'
+            """, (email,))
+            approved_count = cur.fetchone()[0]
+
+            if approved_count >= 5:
+                flash("⚠️ You've already submitted 5 approved leaves this month. Further approvals may be rejected.", "warning")
+
+            # ✅ Insert each leave date as a pending request
             for i in range(num_days):
                 leave_date = request.form[f'leave_date_{i}']
                 cur.execute("""
@@ -553,6 +571,107 @@ def leave_status():
 
     return render_template("leave_status.html", leaves=leaves)
 
+
+@app.route('/submit-feedback', methods=['GET', 'POST'])
+def submit_feedback():
+    if request.method == 'POST':
+        message = request.form['message']
+
+        conn = psycopg2.connect(
+            dbname="NexIQon",
+            user="sanjay",
+            password="",  # secure properly in prod
+            host="localhost",
+            port="5432"
+        )
+        cur = conn.cursor()
+        cur.execute("INSERT INTO feedback (message) VALUES (%s)", (message,))
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        # No flash here to avoid leaking to other users
+        return render_template("thank_you.html")  # new page
+
+    return render_template("submit_feedback.html")
+
+
+@app.route('/hr/feedback', methods=['GET', 'POST'])
+def hr_feedback():
+    if 'user' not in session or session['user'].get('role') != 'hr':
+        return redirect(url_for('signin'))
+
+    conn = psycopg2.connect(
+        dbname="NexIQon",
+        user="sanjay",
+        password="",
+        host="localhost",
+        port="5432"
+    )
+    cur = conn.cursor()
+
+    if request.method == 'POST':
+        feedback_id = request.form['feedback_id']
+        response = request.form['response']
+        cur.execute("""
+    UPDATE feedback
+    SET hr_response = %s
+    WHERE id = %s
+""", (response, feedback_id))
+
+        conn.commit()
+
+    # ✅ Use correct column names here
+    cur.execute("SELECT id, message, hr_response, submitted_at, hr_responded_at FROM feedback")
+
+    feedback_entries = cur.fetchall()
+
+    cur.close()
+    conn.close()
+
+    return render_template("hr_feedback.html", feedbacks=feedback_entries)
+
+
+@app.route('/feedback-responses')
+def feedback_responses():
+    conn = psycopg2.connect(
+        dbname="NexIQon",
+        user="sanjay",
+        password="",
+        host="localhost",
+        port="5432"
+    )
+    cur = conn.cursor()
+    cur.execute("SELECT message, response, responded_at FROM feedback WHERE response IS NOT NULL ORDER BY responded_at DESC")
+    feedback_rows = cur.fetchall()
+    cur.close()
+    conn.close()
+
+    # Pass as list of dicts for easy access
+    responses = [{
+        "message": msg,
+        "response": resp,
+        "responded_at": ts
+    } for msg, resp, ts in feedback_rows]
+
+    return render_template("feedback_responses.html", responses=responses)
+
+@app.route('/view-feedback-responses')
+def view_feedback_responses():
+    conn = psycopg2.connect(
+        dbname="NexIQon",
+        user="sanjay",
+        password="",  # Provide password if needed
+        host="localhost",
+        port="5432"
+    )
+    cur = conn.cursor()
+    cur.execute("SELECT id, message, hr_response, submitted_at FROM feedback ORDER BY submitted_at DESC")
+    feedbacks = cur.fetchall()
+    cur.close()
+    conn.close()
+
+    return render_template('view_feedback.html', feedbacks=feedbacks)
 
 
 @app.route('/hr-announcements', methods=['GET', 'POST'])

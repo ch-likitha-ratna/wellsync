@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+
+
+<head>
+    <title>Induction Kit - NexIQon</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+
+
+<body class="bg-gray-900 text-white min-h-screen">
+    <!-- Top Bar -->
+    <div class="flex justify-between items-center bg-white px-6 py-4 border-b-2 border-gray-300">
+        <h1 class="text-xl font-bold text-blue-600">NexIQon</h1>
+        <a href="/logout" onclick="return confirm('Are you sure you want to logout?')"
+            class="text-red-500 hover:text-red-400 font-semibold">Logout</a>
+    </div>
+
+
+    <!-- Main Title -->
+    <!-- Continue here! Need to work on styling for the paragraphs above and work on maybe space breaks between the
+        'Start Your Journey at NexIQon!' and the welcome message from the CEO. -->
+    <div class="text-center my-8 max-w-2xl mx-auto px-4">
+        <h2 class="text-3xl font-bold text-blue-300">Start Your Journey at NexIQon!</h2>
+        <h6 class=" text-2xl font-bold text-purple-300 mt-4">Welcome Message from the CEO</h6>
+        <p class="mt-4 text-gray-300 leading-relaxed">Welcome to the team, [Employee Name]! At NexIQon, we value our
+            employee's unqiue backgrounds and experiences.
+            We are excited to see what fresh ideas you will bring!
+        </p>
+        <p class="mt-4 text-gray-300 leading-relaxed">We are delighted to have you as our new [Job Title] and to get to
+            know you better in the coming days. Come
+            meet your new teammates today at [Time] and get to know them better! You'll see a meeting invitation in your
+            inbox shortly. Have a great first day!
+        </p>
+    </div>
+
+
+    <!-- Induction Kit Tabs -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto px-4">
+        <!-- <a href="{{ url_for('employee_announcements') }}" class="bg-gray-800 hover:bg-gray-700 transition p-6 rounded-lg shadow text-white text-lg flex items-center space-x-2">
+                <span>📢</span>
+                <span>View Announcements</span>
+            </a> -->
+
+
+        <a href="{{ url_for('company_overview') }}"
+            class="bg-gray-800 hover:bg-gray-700 transition p-6 rounded-lg shadow text-white text-lg flex flex-col items-center justify-center w-48 h-48 mx-auto text-center">
+            <span>Comapny Overview</span>
+            <span class="text-6xl mt-2">👥</span>
+        </a>
+
+
+        <a href="{{ url_for('code_of_conduct') }}"
+            class="bg-gray-800 hover:bg-gray-700 transition p-6 rounded-lg shadow text-white text-lg flex flex-col items-center justify-center w-48 h-48 mx-auto text-center">
+            <span>Code of Conduct</span>
+            <span class="text-6xl mt-2">📜</span>
+        </a>
+
+
+        <a href="{{ url_for('work_schedule_attendance') }}"
+            class="bg-gray-800 hover:bg-gray-700 transition p-6 rounded-lg shadow text-white text-lg flex flex-col items-center justify-center w-48 h-48 mx-auto text-center">
+            <span>Work Schedule & Attendance</span>
+            <span class="text-6xl mt-2">⏰</span>
+        </a>
+
+
+        <a href="{{ url_for('it_security_policies') }}"
+            class="bg-gray-800 hover:bg-gray-700 transition p-6 rounded-lg shadow text-white text-lg flex flex-col items-center justify-center w-48 h-48 mx-auto text-center">
+            <span>IT & Security Policies</span>
+            <span class="text-6xl mt-2">🔒</span>
+        </a>
+
+
+    </div>
+
+
+</body>
+
+
+
+
+</html>

@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>Company Overview - NexIQon</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+
+<body class="bg-gray-900 text-white min-h-screen">
+    <!-- Top Bar -->
+    <div class="flex justify-between items-center bg-white px-6 py-4 border-b-2 border-gray-300">
+        <h1 class="text-xl font-bold text-blue-600">NexIQon</h1>
+        <a href="/logout" onclick="return confirm('Are you sure you want to logout?')"
+            class="text-red-500 hover:text-red-400 font-semibold">Logout</a>
+    </div>
+
+    <!-- Main Title and Logo -->
+    <div class=" flex items-center justify-center my-8 space-x-4 px-4">
+        <img class="w-20 h-20 rounded-full object-cover shadow-md" src="../static/img/QuadrantInternship.png">
+        <h1 class="text-5xl font-bold text-purple-400">NexIQon</h1>
+
+        <!-- The below line is for the company logo using flask. Uncomment and delete the above line when done with the
+        project! -->
+        <!-- <img src="{{ url_for('static', filename='images/logo.png') }}"> -->
+    </div>
+
+    <!-- Mission and Vision Statements -->
+    <div class="text-center my-7 max-w-2xl mx-auto px-4">
+        <h2 class="text-blue-300"><strong>Our Mission</strong></h2>
+        <p>To empower organizations with a unified platform that streamlines employee management, HR tasks, and IT
+            support
+            for a more efficient workplace.
+        </p>
+        <br>
+
+        <h2 class="text-blue-300"><strong>Our Vision</strong></h2>
+        <p>To simplify workplace systems, making employee and HR management accessible, connected, and efficient for
+            every
+            organization.
+        </p>
+    </div>
+
+    <!-- Core Values -->
+    <div class="bg-gray-100 py-10 px-4 rounded-xl shadow max-w-4xl mx-auto my-10">
+        <h2 class="text-3xl font-bold text-center text-purple-500 mb-6">Our Core Values</h2>
+        <div class ="grid grid-cols-1 md:grid-cols-2 gap-6 text-gray-700">
+
+            <div class="flex items-start space-x-3">
+                <span class="text-purple-500 text-2xl">🤝</span>
+                <div>
+                    <h3 class="text-xl font-semibold">Collaboration</h3>
+                    <p>We foster seamless communication across teams to build a more connected workplace.</p>
+                </div>
+            </div>
+
+            <div class="flex items-start space-x-3">
+                <span class="text-purple-500 text-2xl">🚀</span>
+                <div>
+                    <h3 class="text-xl font-semibold">Empowerment</h3>
+                    <p>We support every employee's growth through accessible learning and career resources.</p>
+                </div>
+            </div>
+
+            <div class="flex items-start space-x-3">
+                <span class="text-purple-500 text-2xl">⚡</span>
+                <div>
+                    <h3 class="text-xl font-semibold">Efficiency</h3>
+                    <p>We simplify processes to help people get what they need faster and easier.</p>
+                </div>
+            </div>
+
+            <div class="flex items-start space-x-3">
+                <span class="text-purple-500 text-2xl">💡</span>
+                <div>
+                    <h3 class="text-xl font-semibold">Innovation</h3>
+                    <p>We continuously improve to deliver smarter, user-friendly tools for work.</p>
+                </div>
+            </div>
+
+            <div class="flex items-start space-x-3">
+                <span class="text-purple-500 text-2xl">🛠️</span>
+                <div>
+                    <h3 class="text-xl font-semibold">Support</h3>
+                    <p>We believe in being there for our users - whether it's HR, IT, or career development.</p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- History -->
+    <div class="max-w-6xl mx-auto px-4 py-10"> 
+        <h2 class="text-3xl font-bold text-center text-purple-500 mb-10">Our Journey</h2>
+
+        <div class="flex flex-col md:flex-row md:items-start md:justify-between relative">
+
+            <!-- Timeline Line -->
+             <div class="hidden md:block absolute top-[2.75rem] left-0 w-full h-1 bg-purple-300 z-0"></div>
+
+             <!-- Timeline Items -->
+              <div class="relative z-8 space-y-6 md:space-y-0 md:flex md:gap-10 md:justify-center text-center">
+
+                <!-- Item 1 -->
+                 <div class="md:w-40 flex flex-col items-center">
+                    <div class="w-8 h-8 bg-purple-500 rounded full shadow-md mb-2"></div>
+                    <p class="text-sm text-gray-400">2024 Q2</p>
+                    <h3 class="font-semibold text-purple-600">Idea Sparked</h3>
+                    <p class="text-sm text-gray-500">Born during a hackathon to streamline workplace systems.</p>
+                 </div>
+
+                 <!-- Item 2 -->
+                  <div class="md:w-40 flex flex-col items-center">
+                    <div class="w-8 h-8 bg-purple-500 rounded full shadow-md mb-2"></div>
+                    <p class="text-sm text-gray-400">2024 Q3</p>
+                    <h3 class="font-semibold text-purple-600">MVP Launch</h3>
+                    <p class="text-sm text-gray-500">Launched Employee Portal & IT Help Desk.</p>
+                 </div>
+
+                 <!-- Item 3 -->
+                  <div class="md:w-40 flex flex-col items-center">
+                    <div class="w-8 h-8 bg-purple-500 rounded full shadow-md mb-2"></div>
+                    <p class="text-sm text-gray-400">2025 Q1</p>
+                    <h3 class="font-semibold text-purple-600">HR Portal</h3>
+                    <p class="text-sm text-gray-500">Added HR tools for time and payroll.</p>
+                 </div>
+
+                 <!-- Item 4 -->
+                  <div class="md:w-40 flex flex-col items-center">
+                    <div class="w-8 h-8 bg-purple-500 rounded full shadow-md mb-2"></div>
+                    <p class="text-sm text-gray-400">2025 Q1.5</p>
+                    <h3 class="font-semibold text-purple-600">Employee Feedback Tools</h3>
+                    <p class="text-sm text-gray-500">Launched feedback and survey tools to better understand and support employee needs.</p>
+                 </div>
+
+                 <!-- Item 5 -->
+                  <div class="md:w-40 flex flex-col items-center">
+                    <div class="w-8 h-8 bg-purple-500 rounded full shadow-md mb-2"></div>
+                    <p class="text-sm text-gray-400">2025 Q2</p>
+                    <h3 class="font-semibold text-purple-600">Career Portal</h3>
+                    <p class="text-sm text-gray-500">Launched learning tools & certification paths.</p>
+                 </div>
+
+                 <!-- Item 6 -->
+                  <div class="md:w-40 flex flex-col items-center">
+                    <div class="w-8 h-8 bg-purple-500 rounded full shadow-md mb-2"></div>
+                    <p class="text-sm text-gray-400">Today</p>
+                    <h3 class="font-semibold text-purple-600">Onward</h3>
+                    <p class="text-sm text-gray-500">Continuing to grow with smarter tools.</p>
+                 </div>
+                 
+              </div>
+        </div>
+    </div>
+
+    <br>
+
+    <!-- Org Chart Structure -->
+     <div class="bg-white py-10 max-w-6xl mx-auto text-center">
+        <h2 class="text-3xl font-bold text-purple-600 mb-10">Organization Structure</h2>
+
+
+        <!-- CEO -->
+         <div class="flex flex-col items-center space-y-6">
+            <div class="bg-purple-100 text-purple-800 px-6 py-3 rounded-full shadow-md font-semibold">
+                CEO
+            </div>
+
+
+            <!-- CVP -->
+            <div class="border-1-2 border-purple-300 h-6"></div>
+            <div class="bg-purple-100 text-purple-800 px-6 py-3 rounded-full shadow-md font-semibold">
+                CVP
+            </div>
+
+
+            <!-- VP -->
+            <div class="border-1-2 border-purple-300 h-6"></div>
+            <div class="bg-purple-100 text-purple-800 px-6 py-3 rounded-full shadow-md font-semibold">
+                VP
+            </div>
+
+
+            <!-- Managers -->
+             <div class="border-1-2 border-purple-300 h-6"></div>
+             <div class="flex flex-col md:flex-row justify-center gap-6">
+                <div class="flex flex-col items-center">
+                    <div class="bg-purple-100 text-purple-800 px-6 py-3 rounded-full shadow-md font-semibold">
+                        HR Manager
+                    </div>
+                </div>
+             </div>
+
+
+             <div class="flex flex-col items-center">
+                <div class="bg-purple-100 text-purple-800 px-6 py-3 rounded-full shadow-md font-semibold">
+                    IT Manager
+                </div>
+
+
+                <!-- IT Employees -->
+                <div class="border-l-2 border-purple-300 h-6 mt-2"></div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mt-4">
+                    <div class="bg-gray-100 text-gray-800 px-4 py-2 rounded shadow-sm">Data Analyst</div>
+                    <div class="bg-gray-100 text-gray-800 px-4 py-2 rounded shadow-sm">Frontend Engineer</div>
+                    <div class="bg-gray-100 text-gray-800 px-4 py-2 rounded shadow-sm">Backend Engineer</div>
+                    <div class="bg-gray-100 text-gray-800 px-4 py-2 rounded shadow-sm">Cloud Engineer</div>
+                    <div class="bg-gray-100 text-gray-800 px-4 py-2 rounded shadow-sm">DevOps Engineer</div>
+                </div>
+            </div>
+
+         </div>
+     </div>
+
+
+    
+
+
+</body>
+
+</html>

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <title>IT Security</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+
+<body class="bg-gray-900 text-white min-h-screen">
+    <!-- Top Bar -->
+    <div class="flex justify-between items-center bg-white px-6 py-4 border-b-2 border-gray-300">
+        <h1 class="text-xl font-bold text-blue-600">NexIQon</h1>
+        <a href="/logout" onclick="return confirm('Are you sure you want to logout?')"
+            class="text-red-500 hover:text-red-400 font-semibold">Logout</a>
+    </div>
+
+    <!-- Main Content Container -->
+    <div class="max-w-4xl mx-auto p-6">
+        <!-- Page Title -->
+        <h1 class="text-4xl font-bold mb-6 text-center">IT & Security</h1>
+    </div>
+
+    <!-- Policy Sections Container -->
+     <!-- <div class="space-y-6"> -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 px-4 max-w-6xl mx-auto pb-12">
+
+        <!-- Acceptable Use of Devices and Software -->
+        <div class="bg-white p-6 rounded-xl shadow-md max-w-2xl mx-auto">
+            <h2 class="text-2xl font-semibold text-blue-700 mb-2">Acceptable Use of Devices and Software</h2>
+            <p class="text-blue-500">All company-provided devices and software must be used solely for work-related
+                purposes.</p>
+            <p class="text-blue-500">Employees are expected to:</p>
+            <ul class="list-disc pl-5 space-y-1 text-blue-500">
+                <li>Use approved software and applications only.</li>
+                <li>Avoid installing unlicensed or unauthorized tools.</li>
+                <li>Refrain from accessing inappropriate or harmful websites.</li>
+                <li>Ensure their devices are used in a secure, ethical, and respectful manner.</li>
+            </ul>
+        </div>
+
+        <!-- Password & Authentication Rules -->
+        <div class="bg-white p-6 rounded-xl shadow-md max-w-2xl mx-auto">
+            <h2 class="text-2xl font-semibold text-blue-700 mb-2">Password & Authentication Rules</h2>
+            <p class="text-blue-500">To protect company systems and data, the following rules must be followed:</p>
+            <ul class="list-disc pl-5 space-y-1 text-blue-500">
+                <li>Passwords must be at least 12 characters and include letters, numbers, and symbols/</li>
+                <li>Two-Factor Authentication (2FA) must be enabled on all supported accounts.</li>
+                <li>Do not share passwords with anyone!</li>
+            </ul>
+        </div>
+
+        <!-- Data Privacy & Handling Confidential Information -->
+        <div class="bg-white p-6 rounded-xl shadow-md max-w-2xl mx-auto">
+            <h2 class="text-2xl font-semibold text-blue-700 mb-2">Data Privacy & Handling Confidential Information</h2>
+            <p class="text-blue-500">Protecting client and company data is a top priority. Employees must:</p>
+            <ul class="list-disc pl-5 space-y-1 text-blue-500">
+                <li>Never share confidential data over unsecured channels.</li>
+                <li>Only access data necessary for your role.</li>
+                <li>Use encrypted storage and secure sharing methods for sensitive documents.</li>
+                <li>Follow GDPR, HIPAA, and other applicable data regulations if handling user data.</li>
+            </ul>
+        </div>
+
+        <!-- VPN, Device Encryption & Remote Access -->
+        <div class="bg-white p-6 rounded-xl shadow-md max-w-2xl mx-auto">
+            <h2 class="text-2xl font-semibold text-blue-700 mb-2">VPN, Device Encryption & Remote Access</h2>
+            <p class="text-blue-500">To support hybrid and remote work securely:</p>
+            <ul class="list-disc pl-5 space-y-1 text-blue-500">
+                <li>Employees must connect to the company VPN (Virus Protected Network) when working outside the office.</li>
+                <li>All company laptops must have full-disk encryption enabled.</li>
+                <li>Remote desktop or SSH access must be configured with approval from the IT team.</li>
+                <li>Avoid using public Wi-Fi without VPN protection.</li>
+                <li>Lock or shut down devices when unattended.</li>
+            </ul>
+        </div>
+
+    </div>
+
+</body>
+
+</html>

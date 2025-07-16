@@ -35,15 +35,15 @@
 
     <!-- Induction Kit Tabs -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-2xl mx-auto px-4">
-        <!-- <a href="{{ url_for('employee_announcements') }}" class="bg-gray-800 hover:bg-gray-700 transition p-6 rounded-lg shadow text-white text-lg flex items-center space-x-2">
+        {# <a href="{{ url_for('employee_announcements') }}" class="bg-gray-800 hover:bg-gray-700 transition p-6 rounded-lg shadow text-white text-lg flex items-center space-x-2">
                 <span>📢</span>
                 <span>View Announcements</span>
-            </a> -->
+            </a> #}
 
 
         <a href="{{ url_for('company_overview') }}"
             class="bg-gray-800 hover:bg-gray-700 transition p-6 rounded-lg shadow text-white text-lg flex flex-col items-center justify-center w-48 h-48 mx-auto text-center">
-            <span>Comapny Overview</span>
+            <span>Comapany Overview</span>
             <span class="text-6xl mt-2">👥</span>
         </a>
 
@@ -62,7 +62,7 @@
         </a>
 
 
-        <a href="{{ url_for('it_security_policies') }}"
+        <a href="{{ url_for('it_security') }}"
             class="bg-gray-800 hover:bg-gray-700 transition p-6 rounded-lg shadow text-white text-lg flex flex-col items-center justify-center w-48 h-48 mx-auto text-center">
             <span>IT & Security Policies</span>
             <span class="text-6xl mt-2">🔒</span>

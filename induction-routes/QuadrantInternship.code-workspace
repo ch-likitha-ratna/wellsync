@@ -1,0 +1,17 @@
+{
+	"folders": [
+		{
+			"path": "../.."
+		},
+		{
+			"path": "../../../../../Downloads/front-end-src"
+		},
+		{
+			"path": "../../../../../Downloads/backend-extract"
+		}
+	],
+	"settings": {
+		"liveServer.settings.multiRootWorkspaceName": "QuadrantInternship",
+		"liveServer.settings.port": 5501
+	}
+}

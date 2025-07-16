@@ -102,29 +102,6 @@ def home():
 def induction_kit():
     return render_template('induction.html')
 
-@app.route("/company-overview")
-def company_overview():
-    return render_template("company_overview.html")
-
-
-@app.route("/code-of-conduct")
-def code_of_conduct():
-    return render_template("code_of_conduct.html")
-
-
-@app.route("/work-schedule-attendance")
-def work_schedule_attendance():
-    return render_template("work_schedule_attendance.html")
-
-
-@app.route("/it-security")
-def it_security_policies():
-    return render_template("it_security_policies.html")
-
-
-
-
-
 @app.route('/readmore')
 def read_more():
     return render_template('readmore.html')

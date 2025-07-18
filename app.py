@@ -97,10 +97,29 @@ def logout():
 def home():
     return render_template('home.html')
 
-# Following route is for the induction kit file - Samvedha
+# Following routes are for the induction kit file - Samvedha
 @app.route('/induction')
 def induction_kit():
     return render_template('induction.html')
+
+@app.route('/induction/company-overview')
+def company_overview():
+    return render_template('company-overview.html')
+
+@app.route('/induction/code-of-conduct')
+def code_of_conduct():
+    return render_template('code-of-conduct.html')
+
+@app.route('/induction/it-security')
+def it_security():
+    return render_template('it-security.html')
+
+@app.route('/induction/work-schedule-attendance')
+def work_schedule_attendance():
+    return render_template('work-schedule-attendance.html')
+
+# End of routes for the induction kit file - Samvedha
+
 
 @app.route('/readmore')
 def read_more():

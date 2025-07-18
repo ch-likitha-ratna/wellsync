@@ -98,6 +98,9 @@ def home():
     return render_template('home.html')
 
 # Following routes are for the induction kit file - Samvedha
+# I used the following line instead of line 11. If something does not work, 
+# I think it might be because I used the following line instead of line 11.
+# app = Flask(__name__, template_folder=os.path.join(os.pardir, 'templates'))
 @app.route('/induction')
 def induction_kit():
     return render_template('induction.html')

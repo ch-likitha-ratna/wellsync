@@ -15,20 +15,26 @@
 <body class="bg-gray-900 text-white font-sans">
 
   <!-- 🔹 Navbar -->
-  {% include 'navbar.html' %}
+  {% if not request.endpoint or request.endpoint not in ['signin', 'access_page'] %}
+    {% include 'navbar.html' %}
+  {% endif %}
 
   <!-- 🔹 Main Layout: Sidebar + Scrollable Content -->
   <div class="flex h-screen">
-    {% include 'sidebar.html' %}
+    {% if not request.endpoint or request.endpoint not in ['signin', 'access_page'] %}
+      {% include 'sidebar.html' %}
+    {% endif %}
 
     <!-- Right Panel: Scrollable Page Content -->
-    <main class="flex-1 overflow-y-scroll snap-y snap-mandatory scroll-smooth p-6">
+    <main class="{% if request.endpoint in ['signin', 'access_page'] %}w-full{% else %}flex-1{% endif %} overflow-y-scroll snap-y snap-mandatory scroll-smooth p-6">
       {% block content %}{% endblock %}
     </main>
   </div>
 
   <!-- 🔹 Chatbot -->
-  {% include 'chatbot.html' %}
+  {% if not request.endpoint or request.endpoint not in ['signin', 'access_page'] %}
+    {% include 'chatbot.html' %}
+  {% endif %}
 
   <!-- 🔹 JS for Quick Access -->
   <script>

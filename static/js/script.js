@@ -29,33 +29,23 @@ function sendMessage() {
 
   fetch("/api/chat", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { 
+      "Content-Type": "application/json",
+      "Accept": "text/plain"
+    },
     body: JSON.stringify({ prompt: message }),
   })
-    .then(response => {
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder('utf-8');
-
-      function read() {
-        reader.read().then(({ done, value }) => {
-          if (done) {
-            chatbox.scrollTop = chatbox.scrollHeight;
-            return;
-          }
-          const chunk = decoder.decode(value, { stream: true });
-          botMsg.textContent += chunk;
-          chatbox.scrollTop = chatbox.scrollHeight;
-          read();
-        });
-      }
-
-      read();
+    .then(response => response.text())
+    .then(text => {
+      botMsg.textContent = text;
+      chatbox.scrollTop = chatbox.scrollHeight;
     })
     .catch(() => {
       const errorMsg = document.createElement('div');
       errorMsg.className = 'text-left text-red-600';
       errorMsg.textContent = '⚠️ Failed to connect to server.';
       chatbox.appendChild(errorMsg);
+      chatbox.scrollTop = chatbox.scrollHeight;
     });
 }
 

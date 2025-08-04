@@ -8,7 +8,16 @@
     <a href="#insights" class="text-black font-bold text-sm">RESOURCES</a>
   </nav>
 
-  <button onclick="toggleChatbot()" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-4 py-2 rounded">
-    Let's talk
-  </button>
+  <div class="flex items-center space-x-4">
+    {% if session.user_name %}
+      <span class="text-gray-700">{{ session.user_name }}</span>
+      <a href="/logout" class="bg-red-500 hover:bg-red-600 text-white font-semibold px-4 py-2 rounded">
+        Logout
+      </a>
+    {% else %}
+      <button onclick="toggleChatbot()" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-4 py-2 rounded">
+        Let's talk
+      </button>
+    {% endif %}
+  </div>
 </header>

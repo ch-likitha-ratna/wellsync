@@ -63,8 +63,40 @@
         <a href="/it-helpdesk" class="text-gray-400 hover:text-white block">IT Help Desk</a>
         <a href="/knowledge" class="text-gray-400 hover:text-white block">Knowledge Hub</a>
         <a href="/jobs" class="text-gray-400 hover:text-white block">Jobs</a>
-        <a href="/employee-portal" class="text-gray-400 hover:text-white block">Portal</a>
+        <a href="/employee-portal" class="text-gray-400 hover:text-white block">Employee Portal</a>
         <a href="/reports" class="text-gray-400 hover:text-white block">Reports</a>
+      </div>
+    </div>
+  {% elif session.get('user_role') in ['hr', 'manager'] %}
+    <!-- If logged in as HR/Manager -->
+    <div class="mt-10">
+      <div class="border-l-4 border-blue-600 pl-2 font-bold text-white mb-2">Quick Access</div>
+      <div class="space-y-2">
+        <a href="/employee-portal" class="text-gray-400 hover:text-white block">Employee Portal</a>
+        <a href="/hr-portal" class="text-gray-400 hover:text-white block">HR Management</a>
+        <a href="/career-portal" class="text-gray-400 hover:text-white block">Career Portal</a>
+      </div>
+    </div>
+  {% elif session.get('user_role') == 'it' %}
+    <!-- If logged in as IT -->
+    <div class="mt-10">
+      <div class="border-l-4 border-blue-600 pl-2 font-bold text-white mb-2">Quick Access</div>
+      <div class="space-y-2">
+        <a href="/employee-portal" class="text-gray-400 hover:text-white block">Employee Portal</a>
+        <a href="/it-portal" class="text-gray-400 hover:text-white block">IT Help Desk</a>
+        <a href="/career-portal" class="text-gray-400 hover:text-white block">Career Portal</a>
+      </div>
+    </div>
+  {% elif session.get('user_role') in ['ceo', 'cto'] %}
+    <!-- If logged in as Admin -->
+    <div class="mt-10">
+      <div class="border-l-4 border-blue-600 pl-2 font-bold text-white mb-2">Quick Access</div>
+      <div class="space-y-2">
+        <a href="/admin-dashboard" class="text-gray-400 hover:text-white block">Admin Dashboard</a>
+        <a href="/employee-portal" class="text-gray-400 hover:text-white block">Employee Portal</a>
+        <a href="/hr-portal" class="text-gray-400 hover:text-white block">HR Management</a>
+        <a href="/it-portal" class="text-gray-400 hover:text-white block">IT Help Desk</a>
+        <a href="/career-portal" class="text-gray-400 hover:text-white block">Career Portal</a>
       </div>
     </div>
   {% else %}

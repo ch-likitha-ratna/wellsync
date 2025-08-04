@@ -255,16 +255,27 @@ def submit_leave():
 @app.route('/leave-status')
 @login_required
 def leave_status():
-    query = """
-    SELECT * FROM leave_requests 
-    WHERE employee_id = %s 
-    ORDER BY created_at DESC
-    """
-    leave_requests = db.execute_query(query, (session['user_id'],))
-    return render_template('leave_status.html', leave_requests=leave_requests or [])
+    try:
+        query = """
+        SELECT lr.*, e.first_name, e.last_name,
+               CASE 
+                   WHEN lr.approved_by IS NOT NULL THEN 
+                       CONCAT(mgr.first_name, ' ', mgr.last_name)
+                   ELSE NULL
+               END as approved_by_name
+        FROM leave_requests lr
+        JOIN employee e ON lr.employee_id = e.employee_id
+        LEFT JOIN employee mgr ON lr.approved_by = mgr.employee_id
+        WHERE lr.employee_id = %s 
+        ORDER BY lr.created_at DESC
+        """
+        leave_requests = db.execute_query(query, (session['user_id'],))
+        return render_template('leave_status.html', leave_requests=leave_requests or [])
+    except Exception as e:
+        logging.error(f"Error loading leave status: {str(e)}")
+        flash('Error loading leave requests.', 'error')
+        return render_template('leave_status.html', leave_requests=[])
 
-@app.route('/submit-timesheet', methods=['POST'])
-@login_required
 def submit_timesheet():
     try:
         week_start = request.form.get('week_start')

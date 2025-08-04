@@ -27,19 +27,28 @@ class Database:
         if not self.connection or not self.connection.is_connected():
             self.connect()
         
+        if not self.connection:
+            logging.error("Database connection failed")
+            return None
+            
         try:
             cursor = self.connection.cursor(dictionary=True)
             cursor.execute(query, params)
             
             if query.strip().upper().startswith('SELECT'):
                 result = cursor.fetchall()
+            elif query.strip().upper().startswith(('INSERT', 'UPDATE', 'DELETE')):
+                self.connection.commit()
+                result = cursor.rowcount
             else:
                 result = cursor.rowcount
             
             cursor.close()
             return result
         except Error as e:
-            logging.error(f"Database error: {e}")
+            logging.error(f"Database error in execute_query: {e}")
+            if self.connection:
+                self.connection.rollback()
             return None
     
     def execute_many(self, query, params_list):

@@ -114,30 +114,796 @@ def get_db_connection():
 conn = get_db_connection()
 cur = conn.cursor(dictionary=True)  # 👈 this is what enables dict access
 
+from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
+from flask_mail import Mail, Message
 
+import json
+from datetime import datetime, timedelta
+from werkzeug.utils import secure_filename
+import logging
+
+# Import our custom modules
+from config import Config
+from database import db
+from azure_storage import azure_storage
+from auth import (login_required, role_required, authenticate_user, 
+                 create_user_session, clear_user_session, get_current_user, has_permission)
+from utils import (allowed_file, generate_unique_filename, calculate_work_days,
+                  get_employee_hierarchy, validate_timesheet_date, 
+                  calculate_comp_off_eligibility, get_notification_count)
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
 # Following routes are for the induction kit file - Samvedha
-# I used the following line instead of line 11. If something does not work, 
+app = Flask(__name__, template_folder='templates', static_folder='static')
+app.config.from_object(Config)
+
+# Initialize Flask-Mail
+mail = Mail(app)
+
+# Ensure upload directory exists
+os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 # I think it might be because I used the following line instead of line 11.
-# app = Flask(__name__, template_folder=os.path.join(os.pardir, 'templates'))
+# ============================================================================
+# AUTHENTICATION ROUTES
+# ============================================================================
+
+@app.route('/')
+def home():
+    return render_template('home.html')
+
+@app.route('/access')
+def access_page():
+    return render_template('access.html')
+
+@app.route('/signin', methods=['GET', 'POST'])
+def signin():
+    if request.method == 'POST':
+        email = request.form.get('email')
+        password = request.form.get('password')
+        
+        if not email or not password:
+            flash('Please provide both email and password.', 'error')
+            return render_template('access.html')
+        
+        user = authenticate_user(email, password)
+        if user:
+            create_user_session(user)
+            
+            # Redirect based on user role
+            role = user['department'].lower()
+            if role in ['ceo', 'cto']:
+                return redirect(url_for('admin_dashboard'))
+            elif role == 'hr':
+                return redirect(url_for('hr_portal'))
+            elif role == 'it':
+                return redirect(url_for('it_portal'))
+            else:
+                return redirect(url_for('employee_portal'))
+        else:
+            flash('Invalid email or password.', 'error')
+    
+    return render_template('access.html')
+
+@app.route('/logout')
+@login_required
+def logout():
+    clear_user_session()
+    flash('You have been logged out successfully.', 'success')
+    return redirect(url_for('home'))
+
+# ============================================================================
+# DASHBOARD ROUTES
+# ============================================================================
+
+@app.route('/admin-dashboard')
+@login_required
+@role_required(['CEO', 'CTO'])
+def admin_dashboard():
+    user = get_current_user()
+    return render_template('admin_dashboard.html', user_name=user['first_name'] + ' ' + user['last_name'])
+
+@app.route('/employee-portal')
+@login_required
+def employee_portal():
+    user = get_current_user()
+    return render_template('employee_portal.html', 
+                         user_name=user['first_name'] + ' ' + user['last_name'],
+                         user_role=user['role_title'],
+                         user_email=user['email'],
+                         user_department=user['department'])
+
+@app.route('/hr-portal')
+@login_required
+@role_required(['HR', 'Manager', 'CEO', 'CTO'])
+def hr_portal():
+    user = get_current_user()
+    return render_template('hr_portal.html', user_name=user['first_name'] + ' ' + user['last_name'])
+
+@app.route('/it-portal')
+@login_required
+@role_required(['IT', 'CEO', 'CTO'])
+def it_portal():
+    user = get_current_user()
+    return render_template('it_portal.html', user_name=user['first_name'] + ' ' + user['last_name'])
+
+@app.route('/career-portal')
+@login_required
+def career_portal():
+    user = get_current_user()
+    return render_template('career_portal.html', user_name=user['first_name'] + ' ' + user['last_name'])
+
+# ============================================================================
+# EMPLOYEE PORTAL API ROUTES
+# ============================================================================
+
+@app.route('/api/employee/profile')
+@login_required
+def get_employee_profile():
+    user_id = session['user_id']
+    query = """
+    SELECT employee_id, first_name, last_name, email, contact_number, 
+           department, role_title, location, leaves_sick, leaves_personal, 
+           comp_off, joined_date
+    FROM employee 
+    WHERE employee_id = %s AND status = 'active'
+    """
+    
+    result = db.execute_query(query, (user_id,))
+    if result:
+        profile = result[0]
+        # Format joined_date
+        if profile['joined_date']:
+            profile['joined_date'] = profile['joined_date'].strftime('%Y-%m-%d')
+        return jsonify({'profile': profile})
+    
+    return jsonify({'error': 'Profile not found'}), 404
+
+@app.route('/api/employee/my-tickets')
+@login_required
+def get_my_tickets():
+    user_id = session['user_id']
+    query = """
+    SELECT ticket_id, department, description as subject, description, 
+           severity_level as severity, status, submitted_on as created_date
+    FROM tickets 
+    WHERE employee_id = %s 
+    ORDER BY submitted_on DESC
+    """
+    
+    result = db.execute_query(query, (user_id,))
+    tickets = []
+    
+    if result:
+        for ticket in result:
+            tickets.append({
+                'ticket_id': ticket['ticket_id'],
+                'subject': ticket['subject'][:50] + '...' if len(ticket['subject']) > 50 else ticket['subject'],
+                'description': ticket['description'],
+                'department': ticket['department'],
+                'severity': f"Level {ticket['severity']}",
+                'status': ticket['status'],
+                'created_date': ticket['created_date'].strftime('%Y-%m-%d %H:%M')
+            })
+    
+    return jsonify({'tickets': tickets})
+
+@app.route('/employee/submit-ticket', methods=['POST'])
+@login_required
+def submit_employee_ticket():
+    user_id = session['user_id']
+    user = get_current_user()
+    
+    department = request.form.get('department')
+    severity = request.form.get('severity')
+    subject = request.form.get('subject')
+    description = request.form.get('description')
+    women_safety = 1 if request.form.get('women_safety') else 0
+    
+    if not all([department, severity, subject, description]):
+        flash('Please fill in all required fields.', 'error')
+        return redirect(url_for('employee_portal'))
+    
+    # Map severity to level
+    severity_map = {'Low': '1', 'Medium': '2', 'High': '3', 'Critical': '3'}
+    severity_level = severity_map.get(severity, '2')
+    
+    query = """
+    INSERT INTO tickets (employee_id, email, department, gender, women_safety, 
+                        description, severity_level, status, submitted_on)
+    VALUES (%s, %s, %s, %s, %s, %s, %s, 'Open', NOW())
+    """
+    
+    # Get user gender from employee table
+    gender_query = "SELECT gender FROM employee WHERE employee_id = %s"
+    gender_result = db.execute_query(gender_query, (user_id,))
+    gender = gender_result[0]['gender'] if gender_result else 'Other'
+    
+    full_description = f"Subject: {subject}\n\nDescription: {description}"
+    
+    result = db.execute_query(query, (
+        user_id, user['email'], department, gender, women_safety,
+        full_description, severity_level
+    ))
+    
+    if result:
+        flash('Ticket submitted successfully!', 'success')
+    else:
+        flash('Error submitting ticket. Please try again.', 'error')
+    
+    return redirect(url_for('employee_portal'))
+
+@app.route('/employee/submit-feedback', methods=['POST'])
+@login_required
+def submit_employee_feedback():
+    user_id = session['user_id']
+    
+    feedback_type = request.form.get('feedback_type')
+    target_role = request.form.get('target_role')
+    feedback_text = request.form.get('feedback_text')
+    
+    if not all([feedback_type, feedback_text]):
+        flash('Please fill in all required fields.', 'error')
+        return redirect(url_for('employee_portal'))
+    
+    # For anonymous feedback, we'll store it in a feedback table
+    query = """
+    INSERT INTO anonymous_feedback (employee_id, feedback_type, target_role, 
+                                  feedback_text, submitted_on)
+    VALUES (%s, %s, %s, %s, NOW())
+    """
+    
+    result = db.execute_query(query, (user_id, feedback_type, target_role, feedback_text))
+    
+    if result:
+        flash('Feedback submitted successfully!', 'success')
+    else:
+        flash('Error submitting feedback. Please try again.', 'error')
+    
+    return redirect(url_for('employee_portal'))
+
+@app.route('/employee/submit-timesheet', methods=['POST'])
+@login_required
+def submit_timesheet():
+    user_id = session['user_id']
+    
+    # Get form data
+    week_start = request.form.get('week_start')
+    project_id = request.form.get('project_id')
+    work_description = request.form.get('work_description')
+    
+    # Get hours for each day
+    hours_data = {
+        'hours_mon': float(request.form.get('hours_mon', 0) or 0),
+        'hours_tue': float(request.form.get('hours_tue', 0) or 0),
+        'hours_wed': float(request.form.get('hours_wed', 0) or 0),
+        'hours_thu': float(request.form.get('hours_thu', 0) or 0),
+        'hours_fri': float(request.form.get('hours_fri', 0) or 0),
+        'hours_sat': float(request.form.get('hours_sat', 0) or 0),
+        'hours_sun': float(request.form.get('hours_sun', 0) or 0)
+    }
+    
+    if not week_start:
+        flash('Please select a week start date.', 'error')
+        return redirect(url_for('employee_portal'))
+    
+    # Calculate dates for the week
+    start_date = datetime.strptime(week_start, '%Y-%m-%d').date()
+    
+    # Insert timesheet entries for each day
+    days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
+    for i, day in enumerate(days):
+        hours = hours_data[f'hours_{day}']
+        if hours > 0:
+            work_date = start_date + timedelta(days=i)
+            
+            # Validate date is not in future
+            if not validate_timesheet_date(work_date.strftime('%Y-%m-%d')):
+                flash(f'Cannot submit timesheet for future dates: {work_date}', 'error')
+                return redirect(url_for('employee_portal'))
+            
+            query = """
+            INSERT INTO timesheet (employee_id, project_id, work_date, hours_logged, description)
+            VALUES (%s, %s, %s, %s, %s)
+            ON DUPLICATE KEY UPDATE 
+            hours_logged = VALUES(hours_logged), 
+            description = VALUES(description)
+            """
+            
+            db.execute_query(query, (user_id, project_id, work_date, hours, work_description))
+            
+            # Check for comp-off eligibility
+            if calculate_comp_off_eligibility(user_id, work_date.strftime('%Y-%m-%d'), hours, db):
+                comp_query = """
+                INSERT INTO comp_off_log (employee_id, work_date, hours_worked, status)
+                VALUES (%s, %s, %s, 'pending')
+                """
+                db.execute_query(comp_query, (user_id, work_date, hours))
+    
+    flash('Timesheet submitted successfully!', 'success')
+    return redirect(url_for('employee_portal'))
+
+# ============================================================================
+# LEAVE MANAGEMENT ROUTES
+# ============================================================================
+
+@app.route('/submit-leave', methods=['POST'])
+@login_required
+def submit_leave():
+    user_id = session['user_id']
+    
+    leave_type = request.form.get('leave_type')
+    sub_type = request.form.get('sub_type')
+    start_date = request.form.get('start_date')
+    end_date = request.form.get('end_date')
+    reason = request.form.get('reason')
+    
+    if not all([leave_type, start_date, end_date, reason]):
+        flash('Please fill in all required fields.', 'error')
+        return redirect(url_for('employee_portal'))
+    
+    # Validate dates
+    try:
+        start_dt = datetime.strptime(start_date, '%Y-%m-%d').date()
+        end_dt = datetime.strptime(end_date, '%Y-%m-%d').date()
+        
+        if start_dt > end_dt:
+            flash('Start date cannot be after end date.', 'error')
+            return redirect(url_for('employee_portal'))
+        
+        if start_dt < datetime.now().date():
+            flash('Cannot apply for leave in the past.', 'error')
+            return redirect(url_for('employee_portal'))
+            
+    except ValueError:
+        flash('Invalid date format.', 'error')
+        return redirect(url_for('employee_portal'))
+    
+    query = """
+    INSERT INTO leave_requests (employee_id, leave_type, sub_type, start_date, 
+                               end_date, reason, status, created_at)
+    VALUES (%s, %s, %s, %s, %s, %s, 'Pending', NOW())
+    """
+    
+    result = db.execute_query(query, (user_id, leave_type, sub_type, start_date, end_date, reason))
+    
+    if result:
+        # Get the inserted leave request for confirmation
+        leave_query = """
+        SELECT * FROM leave_requests 
+        WHERE employee_id = %s 
+        ORDER BY created_at DESC 
+        LIMIT 1
+        """
+        leave_result = db.execute_query(leave_query, (user_id,))
+        
+        if leave_result:
+            leave_request = leave_result[0]
+            return render_template('leave_confirmation.html', leave_request=leave_request)
+    
+    flash('Error submitting leave request. Please try again.', 'error')
+    return redirect(url_for('employee_portal'))
+
+@app.route('/leave-status')
+@login_required
+def leave_status():
+    user_id = session['user_id']
+    
+    query = """
+    SELECT leave_id, leave_type, sub_type, start_date, end_date, total_days,
+           reason, status, rejection_reason, created_at
+    FROM leave_requests 
+    WHERE employee_id = %s 
+    ORDER BY created_at DESC
+    """
+    
+    result = db.execute_query(query, (user_id,))
+    leave_requests = result if result else []
+    
+    return render_template('leave_status.html', leave_requests=leave_requests)
+
+# ============================================================================
+# HR PORTAL API ROUTES
+# ============================================================================
+
+@app.route('/api/hr/dashboard-stats')
+@login_required
+@role_required(['HR', 'Manager', 'CEO', 'CTO'])
+def hr_dashboard_stats():
+    # Get total employees
+    total_employees_query = "SELECT COUNT(*) as count FROM employee WHERE status = 'active'"
+    total_employees = db.execute_query(total_employees_query)[0]['count']
+    
+    # Get pending leaves
+    pending_leaves_query = "SELECT COUNT(*) as count FROM leave_requests WHERE status = 'Pending'"
+    pending_leaves = db.execute_query(pending_leaves_query)[0]['count']
+    
+    # Get pending timesheets (assuming we need approval)
+    pending_timesheets_query = """
+    SELECT COUNT(DISTINCT employee_id) as count FROM timesheet 
+    WHERE work_date >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+    """
+    pending_timesheets = db.execute_query(pending_timesheets_query)[0]['count']
+    
+    # Get active job postings
+    active_jobs_query = "SELECT COUNT(*) as count FROM job_postings"
+    active_jobs = db.execute_query(active_jobs_query)[0]['count']
+    
+    return jsonify({
+        'total_employees': total_employees,
+        'pending_leaves': pending_leaves,
+        'pending_timesheets': pending_timesheets,
+        'active_jobs': active_jobs
+    })
+
+@app.route('/api/hr/employees')
+@login_required
+@role_required(['HR', 'Manager', 'CEO', 'CTO'])
+def get_employees():
+    query = """
+    SELECT employee_id, first_name, last_name, email, department, role_title, 
+           contact_number, location, status
+    FROM employee 
+    WHERE status = 'active'
+    ORDER BY first_name, last_name
+    """
+    
+    result = db.execute_query(query)
+    employees = result if result else []
+    
+    return jsonify({'employees': employees})
+
+@app.route('/hr/add-employee', methods=['POST'])
+@login_required
+@role_required(['HR', 'Manager', 'CEO', 'CTO'])
+def add_employee():
+    # Get form data
+    first_name = request.form.get('first_name')
+    last_name = request.form.get('last_name')
+    email = request.form.get('email')
+    contact_number = request.form.get('contact_number')
+    department = request.form.get('department')
+    role_title = request.form.get('role_title')
+    salary = request.form.get('salary')
+    location = request.form.get('location')
+    
+    if not all([first_name, last_name, email, contact_number, department, role_title, salary, location]):
+        flash('Please fill in all required fields.', 'error')
+        return redirect(url_for('hr_portal'))
+    
+    # Check if email already exists
+    check_query = "SELECT employee_id FROM employee WHERE email = %s"
+    existing = db.execute_query(check_query, (email,))
+    
+    if existing:
+        flash('Employee with this email already exists.', 'error')
+        return redirect(url_for('hr_portal'))
+    
+    # Insert new employee
+    insert_query = """
+    INSERT INTO employee (first_name, last_name, email, contact_number, department, 
+                         role_title, salary, location, status, joined_date)
+    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, 'active', NOW())
+    """
+    
+    result = db.execute_query(insert_query, (
+        first_name, last_name, email, contact_number, department, 
+        role_title, salary, location
+    ))
+    
+    if result:
+        # Get the new employee ID
+        employee_id_query = "SELECT LAST_INSERT_ID() as employee_id"
+        employee_id_result = db.execute_query(employee_id_query)
+        employee_id = employee_id_result[0]['employee_id']
+        
+        # Create user account with temporary password
+        temp_password = f"{first_name}@123"
+        user_account_query = """
+        INSERT INTO user_accounts (employee_id, email, password, is_temp_password)
+        VALUES (%s, %s, %s, 1)
+        """
+        db.execute_query(user_account_query, (employee_id, email, temp_password))
+        
+        flash(f'Employee added successfully! Temporary password: {temp_password}', 'success')
+    else:
+        flash('Error adding employee. Please try again.', 'error')
+    
+    return redirect(url_for('hr_portal'))
+
+# ============================================================================
+# CAREER PORTAL API ROUTES
+# ============================================================================
+
+@app.route('/api/career/courses')
+@login_required
+def get_courses():
+    search = request.args.get('search', '')
+    category = request.args.get('category', '')
+    
+    query = """
+    SELECT c.course_id, c.course_name, c.description, c.skill_category, 
+           c.difficulty_level, c.duration_hours, c.passing_score,
+           b.badge_name
+    FROM course_catalog c
+    LEFT JOIN badge_catalog b ON c.badge_id = b.badge_id
+    WHERE c.is_active = 1
+    """
+    params = []
+    
+    if search:
+        query += " AND (c.course_name LIKE %s OR c.description LIKE %s OR c.skill_category LIKE %s)"
+        search_param = f"%{search}%"
+        params.extend([search_param, search_param, search_param])
+    
+    if category:
+        query += " AND c.skill_category = %s"
+        params.append(category)
+    
+    query += " ORDER BY c.course_name"
+    
+    courses = db.execute_query(query, params) if params else db.execute_query(query)
+    
+    # Get unique categories
+    categories_query = "SELECT DISTINCT skill_category FROM course_catalog WHERE is_active = 1"
+    categories_result = db.execute_query(categories_query)
+    categories = [cat['skill_category'] for cat in categories_result] if categories_result else []
+    
+    # Add attempt information for current user
+    user_id = session['user_id']
+    if courses:
+        for course in courses:
+            attempts_query = """
+            SELECT COUNT(*) as total_attempts, MAX(score) as best_score,
+                   MAX(CASE WHEN passed = 1 THEN 1 ELSE 0 END) as has_passed
+            FROM course_attempts 
+            WHERE employee_id = %s AND course_id = %s
+            """
+            attempts = db.execute_query(attempts_query, (user_id, course['course_id']))
+            if attempts:
+                course.update(attempts[0])
+            else:
+                course.update({'total_attempts': 0, 'best_score': None, 'has_passed': 0})
+    
+    return jsonify({
+        'courses': courses or [],
+        'categories': categories
+    })
+
+@app.route('/api/career/course/<int:course_id>')
+@login_required
+def get_course_details(course_id):
+    user_id = session['user_id']
+    
+    # Get course details
+    course_query = """
+    SELECT c.course_id, c.course_name, c.description, c.skill_category, 
+           c.difficulty_level, c.duration_hours, c.passing_score,
+           b.badge_name
+    FROM course_catalog c
+    LEFT JOIN badge_catalog b ON c.badge_id = b.badge_id
+    WHERE c.course_id = %s AND c.is_active = 1
+    """
+    
+    course_result = db.execute_query(course_query, (course_id,))
+    if not course_result:
+        return jsonify({'error': 'Course not found'}), 404
+    
+    course = course_result[0]
+    
+    # Get user's attempts
+    attempts_query = """
+    SELECT attempt_id, score, passed, attempt_date
+    FROM course_attempts 
+    WHERE employee_id = %s AND course_id = %s
+    ORDER BY attempt_date DESC
+    """
+    attempts = db.execute_query(attempts_query, (user_id, course_id)) or []
+    
+    # Format attempt dates
+    for attempt in attempts:
+        attempt['attempt_date'] = attempt['attempt_date'].strftime('%Y-%m-%d %H:%M')
+    
+    # Check if user has earned the badge
+    has_badge = False
+    if course['badge_name']:
+        badge_query = """
+        SELECT 1 FROM employee_badges eb
+        JOIN badge_catalog bc ON eb.badge_id = bc.badge_id
+        WHERE eb.employee_id = %s AND bc.badge_name = %s
+        """
+        badge_result = db.execute_query(badge_query, (user_id, course['badge_name']))
+        has_badge = bool(badge_result)
+    
+    return jsonify({
+        'course': course,
+        'attempts': attempts,
+        'has_badge': has_badge
+    })
+
+@app.route('/api/career/course/<int:course_id>/start-exam')
+@login_required
+def start_exam(course_id):
+    # Get course details
+    course_query = """
+    SELECT course_name, passing_score FROM course_catalog 
+    WHERE course_id = %s AND is_active = 1
+    """
+    course_result = db.execute_query(course_query, (course_id,))
+    
+    if not course_result:
+        return jsonify({'error': 'Course not found'}), 404
+    
+    course = course_result[0]
+    
+    # Get random 20 questions for the exam
+    questions_query = """
+    SELECT question_id, question_text, option_a, option_b, option_c, option_d
+    FROM course_questions 
+    WHERE course_id = %s 
+    ORDER BY RAND() 
+    LIMIT 20
+    """
+    questions = db.execute_query(questions_query, (course_id,))
+    
+    if not questions or len(questions) < 20:
+        return jsonify({'error': 'Not enough questions available for this course'}), 400
+    
+    return jsonify({
+        'course_name': course['course_name'],
+        'passing_score': course['passing_score'],
+        'total_questions': len(questions),
+        'questions': questions
+    })
+
+@app.route('/api/career/course/<int:course_id>/submit-exam', methods=['POST'])
+@login_required
+def submit_exam(course_id):
+    user_id = session['user_id']
+    answers = request.json.get('answers', {})
+    
+    if not answers:
+        return jsonify({'error': 'No answers provided'}), 400
+    
+    # Get correct answers
+    question_ids = list(answers.keys())
+    if not question_ids:
+        return jsonify({'error': 'No valid answers provided'}), 400
+    
+    placeholders = ','.join(['%s'] * len(question_ids))
+    correct_answers_query = f"""
+    SELECT question_id, correct_answer 
+    FROM course_questions 
+    WHERE question_id IN ({placeholders})
+    """
+    
+    correct_answers_result = db.execute_query(correct_answers_query, question_ids)
+    correct_answers = {str(row['question_id']): row['correct_answer'] for row in correct_answers_result}
+    
+    # Calculate score
+    total_questions = len(correct_answers)
+    correct_count = 0
+    
+    for question_id, user_answer in answers.items():
+        if correct_answers.get(question_id) == user_answer:
+            correct_count += 1
+    
+    score = int((correct_count / total_questions) * 100) if total_questions > 0 else 0
+    
+    # Get course passing score
+    course_query = "SELECT passing_score, badge_id FROM course_catalog WHERE course_id = %s"
+    course_result = db.execute_query(course_query, (course_id,))
+    
+    if not course_result:
+        return jsonify({'error': 'Course not found'}), 404
+    
+    course = course_result[0]
+    passed = score >= course['passing_score']
+    
+    # Save attempt
+    attempt_query = """
+    INSERT INTO course_attempts (employee_id, course_id, score, total_questions, 
+                                passed, answers_json, attempt_date)
+    VALUES (%s, %s, %s, %s, %s, %s, NOW())
+    """
+    
+    db.execute_query(attempt_query, (
+        user_id, course_id, score, total_questions, passed, json.dumps(answers)
+    ))
+    
+    # Award badge if passed and badge exists
+    badge_awarded = False
+    if passed and course['badge_id']:
+        # Check if user already has this badge
+        existing_badge_query = """
+        SELECT 1 FROM employee_badges 
+        WHERE employee_id = %s AND badge_id = %s
+        """
+        existing_badge = db.execute_query(existing_badge_query, (user_id, course['badge_id']))
+        
+        if not existing_badge:
+            badge_query = """
+            INSERT INTO employee_badges (employee_id, badge_id, awarded_on)
+            VALUES (%s, %s, CURDATE())
+            """
+            db.execute_query(badge_query, (user_id, course['badge_id']))
+            badge_awarded = True
+    
+    return jsonify({
+        'score': score,
+        'correct_answers': correct_count,
+        'total_questions': total_questions,
+        'passing_score': course['passing_score'],
+        'passed': passed,
+        'badge_awarded': badge_awarded
+    })
+
+# ============================================================================
+# INDUCTION ROUTES (keeping existing functionality)
+# ============================================================================
+
 @app.route('/induction')
+@login_required
 def induction_kit():
     return render_template('induction.html')
 
 @app.route('/induction/company-overview')
+@login_required
 def company_overview():
     return render_template('company-overview.html')
 
 @app.route('/induction/code-of-conduct')
+@login_required
 def code_of_conduct():
     return render_template('code-of-conduct.html')
 
 @app.route('/induction/it-security')
+@login_required
 def it_security():
     return render_template('it-security.html')
 
 @app.route('/induction/work-schedule-attendance')
+@login_required
 def work_schedule_attendance():
     return render_template('work-schedule-attendance.html')
+
+# ============================================================================
+# UTILITY ROUTES
+# ============================================================================
+
+@app.route('/read-more')
+def read_more():
+    return render_template('readmore.html')
+
+@app.route('/contact-submit', methods=['POST'])
+def contact_submit():
+    # Handle contact form submission
+    first_name = request.form.get('first_name')
+    last_name = request.form.get('last_name')
+    email = request.form.get('email')
+    phone = request.form.get('phone')
+    message = request.form.get('message')
+    
+    # Here you would typically save to database or send email
+    # For now, just flash a success message
+    flash('Thank you for your message! We will get back to you soon.', 'success')
+    return redirect(url_for('home'))
+
+# ============================================================================
+# ERROR HANDLERS
+# ============================================================================
+
+@app.errorhandler(404)
+def not_found_error(error):
+    return render_template('404.html'), 404
+
+@app.errorhandler(500)
+def internal_error(error):
+    return render_template('500.html'), 500
+
+# ============================================================================
+# MAIN APPLICATION
+# ============================================================================
 
 # End of routes for the induction kit file - Samvedha
 
@@ -1957,4 +2723,4 @@ def admin_dashboard():
 
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    app.run(debug=True, host='0.0.0.0', port=5000)

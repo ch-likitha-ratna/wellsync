@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from flask import Flask, request, Response, stream_with_context, render_template, redirect, url_for, session, flash
 import requests, json
 import psycopg2
@@ -97,6 +99,22 @@ def logout():
 def home():
     return render_template('home.html')
 
+import mysql.connector
+
+def get_db_connection():
+    return mysql.connector.connect(
+        host="quadprserver.mysql.database.azure.com",
+        user="adminuser",
+        password="Quad@2025",
+        database="nexiqon",
+        port=3306
+
+    )
+
+conn = get_db_connection()
+cur = conn.cursor(dictionary=True)  # 👈 this is what enables dict access
+
+
 # Following routes are for the induction kit file - Samvedha
 # I used the following line instead of line 11. If something does not work, 
 # I think it might be because I used the following line instead of line 11.
@@ -164,39 +182,53 @@ def contact_submit():
 @app.route('/signin', methods=['GET', 'POST'])
 def signin():
     if request.method == 'POST':
-        email = request.form.get('email')
-        password = request.form.get('password')
+        email = request.form['email'].strip()
+        password = request.form['password'].strip()
 
-        try:
-            conn = psycopg2.connect(
-                dbname="NexIQon",
-                user="sanjay",        # 🔁 Replace with your actual PostgreSQL username
-                password="",# 🔁 Replace with your actual PostgreSQL password
-                host="localhost",
-                port="5432"
-            )
-            cur = conn.cursor()
-            cur.execute("SELECT password FROM users WHERE email = %s", (email,))
-            result = cur.fetchone()
-            cur.close()
-            conn.close()
-        except Exception as e:
-            flash(f'Database connection error: {e}', 'error')
-            return render_template('signin.html')
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
 
-        if result:
-            db_password = result[0]
-            if db_password == password:  # You can add hashing later
-                session['user'] = {'email': email}
-                flash('Login successful!', 'success')
-                return redirect(url_for('access_page'))  # Or another welcome page
+        cur.execute("""
+            SELECT ua.account_id, ua.email, ua.employee_id, e.first_name, e.last_name, 
+                   e.department, e.role_title
+            FROM user_accounts ua
+            JOIN employee e ON ua.employee_id = e.employee_id
+            WHERE ua.email = %s AND ua.password = %s
+        """, (email, password))
+
+        user = cur.fetchone()
+
+        if user:
+            session['user'] = {
+                'account_id': user['account_id'],
+                'employee_id': user['employee_id'],
+                'email': user['email'],
+                'name': f"{user['first_name']} {user['last_name']}",
+                'department': user['department'],
+                'role_title': user['role_title']
+            }
+
+            flash("Logged in successfully!", "success")
+
+            # Accurate Redirection based on DB fields
+            if user['role_title'].lower() == 'admin' or user['department'].upper() == 'CEO':
+                return redirect(url_for('admin_dashboard'))
+
+            elif user['department'] in ['HR', 'Manager']:
+                return redirect(url_for('hr_portal'))
+
+            elif user['department'] == 'IT':
+                return redirect(url_for('it_portal'))
+
             else:
-                flash('Invalid password', 'error')
+                return redirect(url_for('employee_portal'))
         else:
-            flash('Email not found or not a member', 'error')
+            flash('Incorrect credentials or account not found.', 'error')
 
-    return render_template('signin.html')
-
+        cur.close()
+        conn.close()
+        return render_template('access.html')  # Render access.html for consistency
+    return render_template('access.html')  # Render access.html for GET requests
 
 @app.route('/dashboard')
 def dashboard():
@@ -305,94 +337,6 @@ def get_user_by_email(email):
         print(f"Database error: {e}")
         return None
 
-
-
-@app.route('/hr-login', methods=['GET', 'POST'])
-def hr_login():
-    if request.method == 'POST':
-        email = request.form.get('email')
-        password = request.form.get('password')
-
-        try:
-            conn = psycopg2.connect(
-                dbname="NexIQon",
-                user="sanjay",        
-                password="",  # replace with your actual password
-                host="localhost",
-                port="5432"
-            )
-            cur = conn.cursor()
-            cur.execute("SELECT password, role FROM users WHERE email = %s", (email,))
-            result = cur.fetchone()
-            cur.close()
-            conn.close()
-
-            if result:
-                db_password, role = result
-                if password == db_password and role == 'hr':
-                    session['user'] = {'email': email, 'role': role}
-                    flash('Login successful! Welcome HR.', 'success')
-                    return redirect('/hr-portal')  # HR dashboard route
-                else:
-                    flash('Access denied: Not authorized as HR.', 'error')
-            else:
-                flash('Invalid credentials.', 'error')
-
-        except Exception as e:
-            flash(f'Database connection error: {e}', 'error')
-
-    return render_template('hr_login.html')
-
-
-@app.route('/hr-portal')
-def hr_portal():
-    if session.get('user') and session['user']['role'] == 'hr':
-        return render_template('hr_portal.html')
-    else:
-        flash("Unauthorized access", "error")
-        return redirect('/hr-login')
-
-
-@app.route('/employee-login', methods=['GET', 'POST'])
-def employee_login():
-    if request.method == 'POST':
-        email = request.form['email']
-        password = request.form['password']
-
-        try:
-            conn = psycopg2.connect(
-                dbname="NexIQon",
-                user="sanjay",
-                password="",
-                host="localhost",
-                port="5432"
-            )
-            cur = conn.cursor()
-            cur.execute("SELECT password, role FROM users WHERE email = %s", (email,))
-            result = cur.fetchone()
-            cur.close()
-            conn.close()
-        except Exception as e:
-            flash(f'Database error: {e}', 'error')
-            return render_template('employee_login.html')
-
-        if result:
-            db_password, role = result
-            if password == db_password:
-                if role == 'employee':
-                    session['user'] = {'email': email, 'role': role}
-                    flash('Login successful!', 'success')
-                    return redirect('/employee-portal')
-                else:
-                    flash('Access denied: Not an employee', 'error')
-            else:
-                flash('Invalid password', 'error')
-        else:
-            flash('Email not found', 'error')
-
-    # Only render login page if GET or after invalid POST
-    return render_template('employee_login.html')
-
 @app.route('/employee-dashboard')
 def employee_dashboard():
     if 'user' not in session or session['user'].get('role') != 'employee':
@@ -402,222 +346,114 @@ def employee_dashboard():
     return render_template('employee_dashboard.html')
 
 
-@app.route('/employee-portal')
-def employee_portal():
-    if 'user' in session and session['user'].get('role') == 'employee':
-        return render_template('employee_portal.html')
-    else:
-        flash('Unauthorized access', 'error')
-        return redirect('/employee-login')
+@app.route('/employee_leave_form')
+def employee_leave_form():
+    return render_template('employee_leave_form.html')
 
-@app.route('/manage-employees')
-def manage_employees():
-    try:
-        conn = psycopg2.connect(
-            dbname="NexIQon",
-            user="sanjay",
-            password="",
-            host="localhost",
-            port="5432"
-        )
-        cur = conn.cursor()
-        cur.execute("SELECT id, email, role FROM users WHERE role = 'employee'")
-        rows = cur.fetchall()
-        employees = [{'id': r[0], 'email': r[1], 'role': r[2]} for r in rows]
-        cur.close()
-        conn.close()
-    except Exception as e:
-        flash(f'Error fetching employee data: {e}', 'error')
-        employees = []
-
-    return render_template('manage_employees.html', employees=employees)
-
-
-@app.route('/request-leave', methods=['GET', 'POST'])
-def request_leave():
-    if request.method == 'POST':
-        email = session.get('user_email')  # store email in session during login
-        leave_date = request.form['leave_date']
-        leave_days = int(request.form['leave_days'])
-        leave_type = request.form['leave_type']
-        reason = request.form['reason']
-
-        conn = psycopg2.connect(...)  # your config
-        cur = conn.cursor()
-
-        # Check how many leaves taken this month
-        cur.execute("""
-            SELECT SUM(leave_days) FROM leave_requests 
-            WHERE employee_email = %s 
-              AND EXTRACT(MONTH FROM leave_date) = EXTRACT(MONTH FROM CURRENT_DATE)
-              AND status = 'Approved'
-        """, (email,))
-        total_taken = cur.fetchone()[0] or 0
-
-        if total_taken + leave_days > 5:
-            flash("You’ve exceeded the monthly leave quota (5 days).", "danger")
-        else:
-            cur.execute("""
-                INSERT INTO leave_requests 
-                (employee_email, leave_date, leave_days, leave_type, reason) 
-                VALUES (%s, %s, %s, %s, %s)
-            """, (email, leave_date, leave_days, leave_type, reason))
-            conn.commit()
-            flash("Leave request submitted!", "success")
-
-        cur.close()
-        conn.close()
-
-    return render_template("employee_leave_form.html")
-
-
-
-@app.route('/hr/leave-requests', methods=['GET', 'POST'])
+@app.route('/hr_leave_requests')
 def hr_leave_requests():
-    if 'user' not in session:
+    if 'user_id' not in session:
         return redirect(url_for('signin'))
 
-    email = session['user'].get('email')
+    manager_id = session['user_id']
+    conn = get_db_connection()
+    cur = conn.cursor(dictionary=True)
 
-    conn = psycopg2.connect(
-        dbname="NexIQon",
-        user="sanjay",
-        password="",  # Use proper credentials
-        host="localhost",
-        port="5432"
-    )
-    cur = conn.cursor()
-    cur.execute("SELECT role FROM users WHERE email = %s", (email,))
-    result = cur.fetchone()
+    # Fetch all pending leave requests assigned to this manager
+    cur.execute("""
+        SELECT lr.leave_id, e.first_name, e.last_name,
+               lr.leave_type, lr.sub_type, lr.start_date, lr.end_date, lr.total_days,
+               lr.reason, lr.status, lr.rejection_reason, lr.created_at
+        FROM leave_requests lr
+        JOIN employee e ON lr.employee_id = e.employee_id
+        WHERE lr.approved_by = %s AND lr.status = 'Pending'
+        ORDER BY lr.created_at DESC
+    """, (manager_id,))
 
-    if not result or result[0] != 'hr':
-        flash('Access denied: HR only', 'error')
-        return redirect(url_for('signin'))
-
-    # ✅ Process Approve/Reject Actions via POST
-    if request.method == 'POST':
-        req_id = request.form['req_id']
-        action = request.form['action']
-        cur.execute("UPDATE leave_requests SET status = %s WHERE id = %s", (action, req_id))
-        conn.commit()
-
-        cur.close()
-        conn.close()
-
-        # ✅ Redirect after POST to avoid re-submission / stale view
-        return redirect(url_for('hr_leave_requests'))
-
-    # ✅ Fetch Updated Requests
-    cur.execute("SELECT * FROM leave_requests ORDER BY submitted_at DESC")
     requests = cur.fetchall()
+    conn.close()
+    return render_template("hr_leave_requests.html", leave_requests=requests)
+
+
+
+@app.route('/submit_leave', methods=['POST'])
+def submit_leave():
+    if 'user' not in session:
+        flash("Please sign in first", "error")
+        return redirect(url_for('signin'))
+
+    data = request.form
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    query = """
+    INSERT INTO leave_requests (employee_id, leave_type, sub_type, start_date, end_date, reason)
+    VALUES (%s, %s, %s, %s, %s, %s)
+    """
+
+    cur.execute(query, (
+        session['user']['employee_id'],
+        data['leave_type'],
+        data.get('sub_type'),
+        data['start_date'],
+        data['end_date'],
+        data['reason']
+    ))
+
+    conn.commit()
     cur.close()
     conn.close()
 
-    return render_template("hr_leave_requests.html", requests=requests)
+    flash("Leave submitted successfully", "success")
+    return redirect(url_for('leave_status'))
 
-@app.route('/submit-leave', methods=['GET', 'POST'])
-def submit_leave_request():
-    if 'user' not in session:
-        return redirect(url_for('signin'))
 
-    if request.method == 'POST':
-        try:
-            email = session['user']['email']
-            leave_type = request.form['leave_type']
-            reason = request.form['reason']
-            num_days = int(request.form['leave_days'])
-
-            conn = psycopg2.connect(
-                dbname="NexIQon",
-                user="sanjay",
-                password="",
-                host="localhost",
-                port="5432"
-            )
-            cur = conn.cursor()
-
-            # ✅ Check how many approved leaves the employee already has this month
-            cur.execute("""
-                SELECT COUNT(*) FROM leave_requests 
-                WHERE employee_email = %s
-                  AND EXTRACT(MONTH FROM leave_date) = EXTRACT(MONTH FROM CURRENT_DATE)
-                  AND EXTRACT(YEAR FROM leave_date) = EXTRACT(YEAR FROM CURRENT_DATE)
-                  AND status = 'Approved'
-            """, (email,))
-            approved_count = cur.fetchone()[0]
-
-            if approved_count >= 5:
-                flash("⚠️ You've already submitted 5 approved leaves this month. Further approvals may be rejected.", "warning")
-
-            # ✅ Insert each leave date as a pending request
-            for i in range(num_days):
-                leave_date = request.form[f'leave_date_{i}']
-                cur.execute("""
-                    INSERT INTO leave_requests (employee_email, leave_date, leave_days, leave_type, reason, status)
-                    VALUES (%s, %s, %s, %s, %s, %s)
-                """, (email, leave_date, 1, leave_type, reason, 'Pending'))
-
-            conn.commit()
-            cur.close()
-            conn.close()
-            return redirect(url_for('leave_status'))
-
-        except Exception as e:
-            return f"Error: {e}"
-
-    return render_template('submit_leave.html')
-
-@app.route('/leave-status')
+@app.route('/leave_status')
 def leave_status():
     if 'user' not in session:
+        flash("Please sign in first", "error")
         return redirect(url_for('signin'))
 
-    email = session['user']['email']
-
-    conn = psycopg2.connect(
-        dbname="NexIQon",
-        user="sanjay",
-        password="",
-        host="localhost",
-        port="5432"
-    )
+    employee_id = session['user']['employee_id']
+    conn = get_db_connection()
     cur = conn.cursor()
-    cur.execute("""
-        SELECT leave_date, leave_days, leave_type, reason, status 
-        FROM leave_requests 
-        WHERE employee_email = %s
-        ORDER BY submitted_at DESC
-    """, (email,))
+
+    query = """
+    SELECT leave_type, sub_type, start_date, end_date, total_days, reason, status, rejection_reason, created_at
+    FROM leave_requests
+    WHERE employee_id = %s
+    ORDER BY created_at DESC
+    """
+
+    cur.execute(query, (employee_id,))
     leaves = cur.fetchall()
+
     cur.close()
     conn.close()
 
-    return render_template("leave_status.html", leaves=leaves)
+    return render_template('leave_status.html', leave_history=leaves)
 
 
-@app.route('/submit-feedback', methods=['GET', 'POST'])
-def submit_feedback():
-    if request.method == 'POST':
-        message = request.form['message']
+@app.route('/update-leave-status', methods=['POST'])
+def update_leave_status():
+    leave_id = request.form['leave_id']
+    status = request.form['status']
+    rejection_reason = request.form.get('rejection_reason') if status == 'Rejected' else None
 
-        conn = psycopg2.connect(
-            dbname="NexIQon",
-            user="sanjay",
-            password="",  # secure properly in prod
-            host="localhost",
-            port="5432"
-        )
-        cur = conn.cursor()
-        cur.execute("INSERT INTO feedback (message) VALUES (%s)", (message,))
-        conn.commit()
-        cur.close()
-        conn.close()
+    conn = get_db_connection()
+    cur = conn.cursor()
 
-        # No flash here to avoid leaking to other users
-        return render_template("thank_you.html")  # new page
+    cur.execute("""
+        UPDATE leave_requests
+        SET status = %s, rejection_reason = %s
+        WHERE leave_id = %s
+    """, (status, rejection_reason, leave_id))
 
-    return render_template("submit_feedback.html")
+    conn.commit()
+    conn.close()
 
+    flash("Leave request updated successfully!", "success")
+    return redirect('/hr_leave_requests')
 
 @app.route('/hr/feedback', methods=['GET', 'POST'])
 def hr_feedback():
@@ -679,89 +515,6 @@ def feedback_responses():
 
     return render_template("feedback_responses.html", responses=responses)
 
-@app.route('/view-feedback-responses')
-def view_feedback_responses():
-    conn = psycopg2.connect(
-        dbname="NexIQon",
-        user="sanjay",
-        password="",  # Provide password if needed
-        host="localhost",
-        port="5432"
-    )
-    cur = conn.cursor()
-    cur.execute("SELECT id, message, hr_response, submitted_at FROM feedback ORDER BY submitted_at DESC")
-    feedbacks = cur.fetchall()
-    cur.close()
-    conn.close()
-
-    return render_template('view_feedback.html', feedbacks=feedbacks)
-
-
-@app.route('/hr-announcements', methods=['GET', 'POST'])
-def hr_announcements():
-    conn = psycopg2.connect(
-        dbname="NexIQon",
-        user="sanjay",
-        password="",  # Fill in your DB password
-        host="localhost",
-        port="5432"
-    )
-    cur = conn.cursor()
-
-    if request.method == 'POST':
-        title = request.form['title']
-        content = request.form['content']
-        cur.execute("INSERT INTO announcements (title, content) VALUES (%s, %s)", 
-                    (title, content))
-        conn.commit()
-        flash("Announcement posted successfully!", "success")
-
-    cur.execute("""
-    SELECT title, content, posted_on 
-    FROM announcements 
-    WHERE posted_on >= NOW() - INTERVAL '30 days' 
-    ORDER BY posted_on DESC
-""")
-
-    announcements = cur.fetchall()
-    cur.close()
-    conn.close()
-
-    announcements_data = [
-    {'title': a[0], 'content': a[1], 'date': a[2].strftime('%Y-%m-%d %H:%M')}
-    for a in announcements
-]
-
-
-    return render_template('announcements.html', announcements=announcements_data)
-
-@app.route('/employee-announcements')
-def employee_announcements():
-    conn = psycopg2.connect(
-        dbname="NexIQon",
-        user="sanjay",
-        password="",  # your DB password
-        host="localhost",
-        port="5432"
-    )
-    cur = conn.cursor()
-
-    # ✅ Only show announcements from last 30 days
-    cur.execute("""
-        SELECT title, content, posted_on 
-        FROM announcements 
-        WHERE posted_on >= NOW() - INTERVAL '30 days' 
-        ORDER BY posted_on DESC
-    """)
-    data = cur.fetchall()
-    conn.close()
-
-    announcements = [
-        {'title': d[0], 'content': d[1], 'date': d[2].strftime('%Y-%m-%d %H:%M')}
-        for d in data
-    ]
-    return render_template("employee_announcements.html", announcements=announcements)
-
 @app.route('/performance-feedback')
 def performance_feedback():
     return render_template('performance_feedback.html')
@@ -778,7 +531,1085 @@ def hr_logout():
     return redirect('/hr-login')
 
 
+@app.route('/unified-login', methods=['GET', 'POST'])
+def unified_login():
+    if request.method == 'GET':
+        return redirect(url_for('access_page'))
+    
+    email = request.form.get('email')
+    password = request.form.get('password')
+    
+    if not email or not password:
+        flash('Please provide both email and password', 'error')
+        return redirect(url_for('access_page'))
+    
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+        
+        # Get user account and employee details
+        cur.execute("""
+            SELECT ua.account_id, ua.employee_id, ua.email, ua.password, ua.is_temp_password,
+                   e.first_name, e.last_name, e.department, e.role_title, e.manager_id, e.photo_blob
+            FROM user_accounts ua
+            JOIN employee e ON ua.employee_id = e.employee_id
+            WHERE ua.email = %s AND e.status = 'active'
+        """, (email,))
+        
+        user = cur.fetchone()
+        conn.close()
+        
+        if not user:
+            flash('Invalid email or password', 'error')
+            return redirect(url_for('access_page'))
+        
+        # Simple password check (in production, use proper hashing)
+        if user['password'] != password:
+            flash('Invalid email or password', 'error')
+            return redirect(url_for('access_page'))
+        
+        # Set session data
+        session['user_id'] = user['employee_id']
+        session['user_email'] = user['email']
+        session['user_name'] = f"{user['first_name']} {user['last_name']}"
+        session['user_department'] = user['department']
+        session['user_role'] = user['role_title']
+        session['manager_id'] = user['manager_id']
+        session['is_temp_password'] = user['is_temp_password']
+        
+        # Role-based redirection
+        department = user['department'].upper()
+        
+        if department == 'CEO':
+            # Admin access - redirect to admin dashboard with all modules
+            return redirect(url_for('admin_dashboard'))
+        elif department in ['HR', 'MANAGER']:
+            # HR/Manager access - redirect to HR portal with employee portal access
+            return redirect(url_for('hr_portal'))
+        elif department == 'IT':
+            # IT access - redirect to IT portal with employee and career access
+            return redirect(url_for('it_portal'))
+        else:
+            # Employee access - redirect to employee portal
+            return redirect(url_for('employee_portal'))
+            
+    except Exception as e:
+        flash(f'Login error: {str(e)}', 'error')
+        return redirect(url_for('access_page'))
 
+
+@app.route('/hr-portal')
+@login_required
+def hr_portal():
+    """HR Portal - HR, Manager, and CEO access"""
+    if session.get('user_department') not in ['HR', 'Manager', 'CEO']:
+        flash('Access denied - HR privileges required', 'error')
+        return redirect(url_for('signin'))
+    
+    return render_template('hr_portal.html', 
+                         user_name=session.get('user_name'),
+                         user_department=session.get('user_department'))
+
+@app.route('/employee-portal')
+@login_required
+def employee_portal():
+    """Employee Portal - All employees access"""
+    if 'user_id' not in session:
+        flash('Please log in to access employee portal.', 'error')
+        return redirect(url_for('signin'))
+    
+    return render_template('employee_portal.html', 
+                         user_name=session.get('user_name'),
+                         user_department=session.get('user_department'),
+                         employee_id=session.get('employee_id'))
+
+@app.route('/it-portal')
+@login_required
+def it_portal():
+    """IT Portal - IT and CEO access"""
+    if session.get('user_department') not in ['IT', 'CEO']:
+        flash('Access denied - IT privileges required', 'error')
+        return redirect(url_for('signin'))
+    
+    return render_template('it_portal.html', 
+                         user_name=session.get('user_name'),
+                         user_department=session.get('user_department'))
+
+@app.route('/career-portal')
+@login_required
+def career_portal():
+    """Career Portal - All employees access"""
+    if 'user_id' not in session:
+        flash('Please log in to access career portal.', 'error')
+        return redirect(url_for('signin'))
+    
+    return render_template('career_portal.html', 
+                         user_name=session.get('user_name'),
+                         user_department=session.get('user_department'),
+                         employee_id=session.get('employee_id'))
+
+# Admin Dashboard API Endpoints
+@app.route('/api/admin/dashboard-stats')
+@login_required
+def admin_dashboard_stats():
+    if session.get('user_department') != 'CEO':
+        return {'error': 'Access denied'}, 403
+    
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # Get total employees
+        cur.execute("SELECT COUNT(*) FROM employee WHERE status = 'active'")
+        total_employees = cur.fetchone()[0]
+        
+        # Get open tickets
+        cur.execute("SELECT COUNT(*) FROM tickets WHERE status IN ('Open', 'In Progress')")
+        open_tickets = cur.fetchone()[0]
+        
+        # Get pending leave requests
+        cur.execute("SELECT COUNT(*) FROM leave_requests WHERE status = 'Pending'")
+        pending_leaves = cur.fetchone()[0]
+        
+        # Get active job postings
+        cur.execute("SELECT COUNT(*) FROM job_postings")
+        active_jobs = cur.fetchone()[0]
+        
+        conn.close()
+        
+        return {
+            'total_employees': total_employees,
+            'open_tickets': open_tickets,
+            'pending_leaves': pending_leaves,
+            'active_jobs': active_jobs
+        }
+    except Exception as e:
+        return {'error': str(e)}, 500
+
+@app.route('/api/admin/recent-activity')
+@login_required
+def admin_recent_activity():
+    if session.get('user_department') != 'CEO':
+        return {'error': 'Access denied'}, 403
+    
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+        
+        activities = []
+        
+        # Recent employee additions
+        cur.execute("""
+            SELECT CONCAT('New employee: ', first_name, ' ', last_name, ' joined') as description,
+                   joined_date as timestamp, 'user-plus' as icon
+            FROM employee 
+            WHERE joined_date >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+            ORDER BY joined_date DESC LIMIT 5
+        """)
+        emp_activities = cur.fetchall()
+        
+        # Recent ticket submissions
+        cur.execute("""
+            SELECT CONCAT('New ticket submitted by employee') as description,
+                   submitted_on as timestamp, 'ticket-alt' as icon
+            FROM tickets 
+            WHERE submitted_on >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+            ORDER BY submitted_on DESC LIMIT 5
+        """)
+        ticket_activities = cur.fetchall()
+        
+        # Combine activities
+        all_activities = emp_activities + ticket_activities
+        all_activities.sort(key=lambda x: x['timestamp'] or '', reverse=True)
+        
+        # Format timestamps
+        for activity in all_activities[:10]:
+            if activity['timestamp']:
+                activity['timestamp'] = activity['timestamp'].strftime('%Y-%m-%d %H:%M')
+            else:
+                activity['timestamp'] = 'Unknown'
+        
+        conn.close()
+        
+        return {'activities': all_activities[:10]}
+        
+    except Exception as e:
+        return {'error': str(e)}, 500
+
+# Employee Portal API Endpoints
+@app.route('/api/employee/profile')
+@login_required
+def employee_get_profile():
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+        
+        cur.execute("""
+            SELECT e.*, p.project_name, m.first_name as manager_first_name, m.last_name as manager_last_name
+            FROM employee e
+            LEFT JOIN project p ON e.project_id = p.project_id
+            LEFT JOIN employee m ON e.manager_id = m.employee_id
+            WHERE e.employee_id = %s
+        """, (session.get('employee_id'),))
+        
+        profile = cur.fetchone()
+        conn.close()
+        
+        if profile:
+            # Format dates
+            if profile['joined_date']:
+                profile['joined_date'] = profile['joined_date'].strftime('%Y-%m-%d')
+            # Convert photo_blob to base64 if exists
+            if profile['photo_blob']:
+                import base64
+                profile['photo_base64'] = base64.b64encode(profile['photo_blob']).decode('utf-8')
+        
+        return {'profile': profile}
+        
+    except Exception as e:
+        return {'error': str(e)}, 500
+
+@app.route('/employee/submit-timesheet', methods=['POST'])
+@login_required
+def employee_submit_timesheet():
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # Get form data
+        week_start = request.form['week_start']
+        project_id = request.form.get('project_id')
+        work_description = request.form.get('work_description', '')
+        
+        # Process daily hours
+        days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']
+        
+        # Calculate week dates
+        from datetime import datetime, timedelta
+        start_date = datetime.strptime(week_start, '%Y-%m-%d')
+        
+        for i, day in enumerate(days):
+            hours = request.form.get(f'hours_{day}')
+            if hours and float(hours) > 0:
+                work_date = start_date + timedelta(days=i)
+                
+                cur.execute("""
+                    INSERT INTO timesheet (employee_id, project_id, work_date, hours_logged, work_description)
+                    VALUES (%s, %s, %s, %s, %s)
+                    ON DUPLICATE KEY UPDATE 
+                    hours_logged = VALUES(hours_logged),
+                    work_description = VALUES(work_description)
+                """, (
+                    session.get('employee_id'),
+                    project_id if project_id else None,
+                    work_date.strftime('%Y-%m-%d'),
+                    float(hours),
+                    work_description
+                ))
+        
+        conn.commit()
+        conn.close()
+        
+        flash('Timesheet submitted successfully!', 'success')
+        return redirect(url_for('employee_portal'))
+        
+    except Exception as e:
+        flash(f'Error submitting timesheet: {str(e)}', 'error')
+        return redirect(url_for('employee_portal'))
+
+@app.route('/employee/submit-ticket', methods=['POST'])
+@login_required
+def employee_submit_ticket():
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        women_safety = 1 if request.form.get('women_safety') == '1' else 0
+        
+        cur.execute("""
+            INSERT INTO tickets (employee_id, department, subject, issue_description, severity, women_safety, status, created_date)
+            VALUES (%s, %s, %s, %s, %s, %s, 'Open', NOW())
+        """, (
+            session.get('employee_id'),
+            request.form['department'],
+            request.form['subject'],
+            request.form['description'],
+            request.form['severity'],
+            women_safety
+        ))
+        
+        conn.commit()
+        conn.close()
+        
+        flash('Support ticket submitted successfully!', 'success')
+        return redirect(url_for('employee_portal'))
+        
+    except Exception as e:
+        flash(f'Error submitting ticket: {str(e)}', 'error')
+        return redirect(url_for('employee_portal'))
+
+@app.route('/employee/submit-feedback', methods=['POST'])
+@login_required
+def employee_submit_feedback():
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        cur.execute("""
+            INSERT INTO feedback (employee_id, feedback_type, target_role, feedback_text, is_anonymous, created_date)
+            VALUES (%s, %s, %s, %s, %s, NOW())
+        """, (
+            session.get('employee_id'),
+            request.form['feedback_type'],
+            request.form.get('target_role'),
+            request.form['feedback_text'],
+            1  # Always anonymous
+        ))
+        
+        conn.commit()
+        conn.close()
+        
+        flash('Anonymous feedback submitted successfully!', 'success')
+        return redirect(url_for('employee_portal'))
+        
+    except Exception as e:
+        flash(f'Error submitting feedback: {str(e)}', 'error')
+        return redirect(url_for('employee_portal'))
+
+# Employee Portal API Endpoints
+@app.route('/api/employee/my-tickets')
+@login_required
+def employee_get_my_tickets():
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+        
+        cur.execute("""
+            SELECT ticket_id, department, subject, issue_description as description, 
+                   severity, status, women_safety, created_date, updated_date
+            FROM tickets 
+            WHERE employee_id = %s 
+            ORDER BY created_date DESC
+        """, (session.get('employee_id'),))
+        
+        tickets = cur.fetchall()
+        
+        # Format dates
+        for ticket in tickets:
+            if ticket['created_date']:
+                ticket['created_date'] = ticket['created_date'].strftime('%Y-%m-%d %H:%M')
+            if ticket['updated_date']:
+                ticket['updated_date'] = ticket['updated_date'].strftime('%Y-%m-%d %H:%M')
+        
+        conn.close()
+        
+        return {'tickets': tickets}
+        
+    except Exception as e:
+        return {'error': str(e)}, 500
+
+@app.route('/api/employee/induction')
+@login_required
+def employee_get_induction():
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+        
+        # Get induction content for the employee's department
+        cur.execute("""
+            SELECT ic.content_id, ic.title, ic.description, ic.file_path, ic.content_type,
+                   ic.created_date, ic.is_mandatory
+            FROM induction_content ic
+            LEFT JOIN employee e ON e.department = ic.target_department OR ic.target_department IS NULL
+            WHERE e.employee_id = %s AND ic.is_active = TRUE
+            ORDER BY ic.is_mandatory DESC, ic.created_date DESC
+        """, (session.get('employee_id'),))
+        
+        content = cur.fetchall()
+        
+        # Format dates
+        for item in content:
+            if item['created_date']:
+                item['created_date'] = item['created_date'].strftime('%Y-%m-%d')
+        
+        conn.close()
+        
+        return {'content': content}
+        
+    except Exception as e:
+        return {'error': str(e)}, 500
+
+
+
+# Career Portal API Endpoints
+@app.route('/api/career/badges')
+@login_required
+def career_get_badges():
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+        
+        # Get employee badges
+        cur.execute("""
+            SELECT eb.*, bc.badge_name, bc.description, bc.icon
+            FROM employee_badges eb
+            JOIN badge_catalog bc ON eb.badge_id = bc.badge_id
+            WHERE eb.employee_id = %s
+            ORDER BY eb.earned_date DESC
+        """, (session.get('employee_id'),))
+        
+        badges = cur.fetchall()
+        
+        # Get available badges not yet earned
+        cur.execute("""
+            SELECT bc.*
+            FROM badge_catalog bc
+            WHERE bc.badge_id NOT IN (
+                SELECT badge_id FROM employee_badges WHERE employee_id = %s
+            )
+        """, (session.get('employee_id'),))
+        
+        available_badges = cur.fetchall()
+        
+        conn.close()
+        
+        return {
+            'earned_badges': badges,
+            'available_badges': available_badges
+        }
+        
+    except Exception as e:
+        return {'error': str(e)}, 500
+
+@app.route('/api/career/courses')
+@login_required
+def career_get_courses():
+    try:
+        search_query = request.args.get('search', '')
+        category = request.args.get('category', '')
+        
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+        
+        # Build search query
+        base_query = """
+            SELECT cc.*, bc.badge_name, bc.description as badge_description,
+                   COUNT(ca.attempt_id) as total_attempts,
+                   MAX(ca.score) as best_score,
+                   MAX(ca.passed) as has_passed
+            FROM course_catalog cc
+            LEFT JOIN badge_catalog bc ON cc.badge_id = bc.badge_id
+            LEFT JOIN course_attempts ca ON cc.course_id = ca.course_id AND ca.employee_id = %s
+            WHERE cc.is_active = TRUE
+        """
+        
+        params = [session.get('employee_id')]
+        
+        if search_query:
+            base_query += " AND (cc.course_name LIKE %s OR cc.description LIKE %s)"
+            params.extend([f'%{search_query}%', f'%{search_query}%'])
+        
+        if category:
+            base_query += " AND cc.skill_category = %s"
+            params.append(category)
+        
+        base_query += " GROUP BY cc.course_id ORDER BY cc.course_name"
+        
+        cur.execute(base_query, params)
+        courses = cur.fetchall()
+        
+        # Get available categories
+        cur.execute("SELECT DISTINCT skill_category FROM course_catalog WHERE is_active = TRUE")
+        categories = [row['skill_category'] for row in cur.fetchall()]
+        
+        conn.close()
+        
+        return {
+            'courses': courses,
+            'categories': categories
+        }
+        
+    except Exception as e:
+        return {'error': str(e)}, 500
+
+@app.route('/api/career/course/<int:course_id>')
+@login_required
+def career_get_course_details(course_id):
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+        
+        # Get course details
+        cur.execute("""
+            SELECT cc.*, bc.badge_name, bc.description as badge_description, bc.icon
+            FROM course_catalog cc
+            LEFT JOIN badge_catalog bc ON cc.badge_id = bc.badge_id
+            WHERE cc.course_id = %s AND cc.is_active = TRUE
+        """, (course_id,))
+        
+        course = cur.fetchone()
+        
+        if not course:
+            return {'error': 'Course not found'}, 404
+        
+        # Get user's attempt history for this course
+        cur.execute("""
+            SELECT attempt_id, score, total_questions, passed, attempt_date
+            FROM course_attempts
+            WHERE employee_id = %s AND course_id = %s
+            ORDER BY attempt_date DESC
+        """, (session.get('employee_id'), course_id))
+        
+        attempts = cur.fetchall()
+        
+        # Format attempt dates
+        for attempt in attempts:
+            if attempt['attempt_date']:
+                attempt['attempt_date'] = attempt['attempt_date'].strftime('%Y-%m-%d %H:%M')
+        
+        # Check if user already has the badge
+        cur.execute("""
+            SELECT COUNT(*) as has_badge
+            FROM employee_badges
+            WHERE employee_id = %s AND badge_id = %s
+        """, (session.get('employee_id'), course['badge_id']))
+        
+        has_badge = cur.fetchone()['has_badge'] > 0
+        
+        conn.close()
+        
+        return {
+            'course': course,
+            'attempts': attempts,
+            'has_badge': has_badge
+        }
+        
+    except Exception as e:
+        return {'error': str(e)}, 500
+
+@app.route('/api/career/course/<int:course_id>/start-exam')
+@login_required
+def career_start_exam(course_id):
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+        
+        # Verify course exists and is active
+        cur.execute("""
+            SELECT course_name, passing_score
+            FROM course_catalog
+            WHERE course_id = %s AND is_active = TRUE
+        """, (course_id,))
+        
+        course = cur.fetchone()
+        
+        if not course:
+            return {'error': 'Course not found or inactive'}, 404
+        
+        # Get 20 random questions for this course
+        cur.execute("""
+            SELECT question_id, question_text, option_a, option_b, option_c, option_d
+            FROM course_questions
+            WHERE course_id = %s
+            ORDER BY RAND()
+            LIMIT 20
+        """, (course_id,))
+        
+        questions = cur.fetchall()
+        
+        if len(questions) < 20:
+            return {'error': 'Not enough questions available for this course'}, 400
+        
+        conn.close()
+        
+        return {
+            'course_name': course['course_name'],
+            'passing_score': course['passing_score'],
+            'questions': questions,
+            'total_questions': len(questions)
+        }
+        
+    except Exception as e:
+        return {'error': str(e)}, 500
+
+@app.route('/api/career/course/<int:course_id>/submit-exam', methods=['POST'])
+@login_required
+def career_submit_exam(course_id):
+    try:
+        answers = request.json.get('answers', {})  # {question_id: 'A', question_id: 'B', ...}
+        
+        if not answers:
+            return {'error': 'No answers provided'}, 400
+        
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+        
+        # Get course details
+        cur.execute("""
+            SELECT course_name, passing_score, badge_id
+            FROM course_catalog
+            WHERE course_id = %s AND is_active = TRUE
+        """, (course_id,))
+        
+        course = cur.fetchone()
+        
+        if not course:
+            return {'error': 'Course not found'}, 404
+        
+        # Get correct answers for submitted questions
+        question_ids = list(answers.keys())
+        placeholders = ','.join(['%s'] * len(question_ids))
+        
+        cur.execute(f"""
+            SELECT question_id, correct_answer
+            FROM course_questions
+            WHERE question_id IN ({placeholders})
+        """, question_ids)
+        
+        correct_answers = {str(row['question_id']): row['correct_answer'] for row in cur.fetchall()}
+        
+        # Calculate score
+        total_questions = len(answers)
+        correct_count = 0
+        
+        for question_id, user_answer in answers.items():
+            if correct_answers.get(str(question_id)) == user_answer:
+                correct_count += 1
+        
+        score = int((correct_count / total_questions) * 100)
+        passed = score >= course['passing_score']
+        
+        # Record attempt
+        cur.execute("""
+            INSERT INTO course_attempts 
+            (employee_id, course_id, score, total_questions, passed, answers_json)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """, (
+            session.get('employee_id'),
+            course_id,
+            score,
+            total_questions,
+            passed,
+            json.dumps(answers)
+        ))
+        
+        attempt_id = cur.lastrowid
+        
+        # Award badge if passed and not already earned
+        badge_awarded = False
+        if passed and course['badge_id']:
+            # Check if user already has this badge
+            cur.execute("""
+                SELECT COUNT(*) as has_badge
+                FROM employee_badges
+                WHERE employee_id = %s AND badge_id = %s
+            """, (session.get('employee_id'), course['badge_id']))
+            
+            if cur.fetchone()['has_badge'] == 0:
+                # Award the badge
+                cur.execute("""
+                    INSERT INTO employee_badges (employee_id, badge_id, earned_date)
+                    VALUES (%s, %s, NOW())
+                """, (session.get('employee_id'), course['badge_id']))
+                badge_awarded = True
+        
+        conn.commit()
+        conn.close()
+        
+        return {
+            'attempt_id': attempt_id,
+            'score': score,
+            'total_questions': total_questions,
+            'correct_answers': correct_count,
+            'passed': passed,
+            'passing_score': course['passing_score'],
+            'badge_awarded': badge_awarded,
+            'course_name': course['course_name']
+        }
+        
+    except Exception as e:
+        return {'error': str(e)}, 500
+
+@app.route('/api/career/my-attempts')
+@login_required
+def career_get_my_attempts():
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+        
+        cur.execute("""
+            SELECT ca.*, cc.course_name, cc.skill_category, bc.badge_name
+            FROM course_attempts ca
+            JOIN course_catalog cc ON ca.course_id = cc.course_id
+            LEFT JOIN badge_catalog bc ON cc.badge_id = bc.badge_id
+            WHERE ca.employee_id = %s
+            ORDER BY ca.attempt_date DESC
+        """, (session.get('employee_id'),))
+        
+        attempts = cur.fetchall()
+        
+        # Format dates
+        for attempt in attempts:
+            if attempt['attempt_date']:
+                attempt['attempt_date'] = attempt['attempt_date'].strftime('%Y-%m-%d %H:%M')
+        
+        conn.close()
+        
+        return {'attempts': attempts}
+        
+    except Exception as e:
+        return {'error': str(e)}, 500
+
+# IT Portal API Endpoints
+@app.route('/api/it/dashboard-stats')
+@login_required
+def it_dashboard_stats():
+    if session.get('user_department') not in ['IT', 'CEO']:
+        return {'error': 'Access denied'}, 403
+    
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # Get open IT tickets
+        cur.execute("SELECT COUNT(*) FROM tickets WHERE department = 'IT' AND status IN ('Open', 'In Progress')")
+        open_tickets = cur.fetchone()[0]
+        
+        # Get total devices
+        cur.execute("SELECT COUNT(*) FROM asset_inventory")
+        total_devices = cur.fetchone()[0]
+        
+        # Get available devices
+        cur.execute("SELECT COUNT(*) FROM asset_inventory WHERE status = 'Available'")
+        available_devices = cur.fetchone()[0]
+        
+        # Get devices needing repair
+        cur.execute("SELECT COUNT(*) FROM asset_inventory WHERE status = 'Under Repair'")
+        pending_repairs = cur.fetchone()[0]
+        
+        conn.close()
+        
+        return {
+            'open_tickets': open_tickets,
+            'total_devices': total_devices,
+            'available_devices': available_devices,
+            'pending_repairs': pending_repairs
+        }
+    except Exception as e:
+        return {'error': str(e)}, 500
+
+@app.route('/api/it/tickets')
+@login_required
+def it_get_tickets():
+    if session.get('user_department') not in ['IT', 'CEO']:
+        return {'error': 'Access denied'}, 403
+    
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+        
+        cur.execute("""
+            SELECT t.*, e.first_name, e.last_name
+            FROM tickets t
+            JOIN employee e ON t.employee_id = e.employee_id
+            WHERE t.department = 'IT'
+            ORDER BY t.submitted_on DESC
+        """)
+        
+        tickets = cur.fetchall()
+        conn.close()
+        
+        # Format dates
+        for ticket in tickets:
+            if ticket['submitted_on']:
+                ticket['submitted_on'] = ticket['submitted_on'].strftime('%Y-%m-%d %H:%M')
+        
+        return {'tickets': tickets}
+        
+    except Exception as e:
+        return {'error': str(e)}, 500
+
+@app.route('/it/update-ticket', methods=['POST'])
+@login_required
+def it_update_ticket():
+    if session.get('user_department') not in ['IT', 'CEO']:
+        flash('Access denied', 'error')
+        return redirect(url_for('it_portal'))
+    
+    try:
+        ticket_id = request.form['ticket_id']
+        status = request.form['status']
+        resolution_notes = request.form.get('resolution_notes', '')
+        
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        cur.execute("""
+            UPDATE tickets 
+            SET status = %s, resolution_notes = %s, resolved_by = %s, resolved_on = NOW()
+            WHERE ticket_id = %s
+        """, (status, resolution_notes, session.get('employee_id'), ticket_id))
+        
+        conn.commit()
+        conn.close()
+        
+        flash('Ticket status updated successfully!', 'success')
+        return redirect(url_for('it_portal'))
+        
+    except Exception as e:
+        flash(f'Error updating ticket: {str(e)}', 'error')
+        return redirect(url_for('it_portal'))
+
+@app.route('/api/it/devices')
+@login_required
+def it_get_devices():
+    if session.get('user_department') not in ['IT', 'CEO']:
+        return {'error': 'Access denied'}, 403
+    
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+        
+        cur.execute("""
+            SELECT ai.*, 
+                   CONCAT(e.first_name, ' ', e.last_name) as assigned_to
+            FROM asset_inventory ai
+            LEFT JOIN employee e ON ai.assigned_to = e.employee_id
+            ORDER BY ai.asset_id DESC
+        """)
+        
+        devices = cur.fetchall()
+        conn.close()
+        
+        # Format dates
+        for device in devices:
+            if device.get('purchase_date'):
+                device['purchase_date'] = device['purchase_date'].strftime('%Y-%m-%d')
+            if device.get('warranty_expiry'):
+                device['warranty_expiry'] = device['warranty_expiry'].strftime('%Y-%m-%d')
+        
+        return {'devices': devices}
+        
+    except Exception as e:
+        return {'error': str(e)}, 500
+
+@app.route('/it/add-device', methods=['POST'])
+@login_required
+def it_add_device():
+    if session.get('user_department') not in ['IT', 'CEO']:
+        flash('Access denied', 'error')
+        return redirect(url_for('it_portal'))
+    
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        cur.execute("""
+            INSERT INTO asset_inventory 
+            (device_type, brand, model, serial_number, purchase_date, warranty_expiry, 
+             specifications, status, added_by)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, 'Available', %s)
+        """, (
+            request.form['device_type'], request.form['brand'],
+            request.form['model'], request.form['serial_number'],
+            request.form.get('purchase_date'), request.form.get('warranty_expiry'),
+            request.form.get('specifications', ''), session.get('employee_id')
+        ))
+        
+        conn.commit()
+        conn.close()
+        
+        flash('Device added successfully!', 'success')
+        return redirect(url_for('it_portal'))
+        
+    except Exception as e:
+        flash(f'Error adding device: {str(e)}', 'error')
+        return redirect(url_for('it_portal'))
+
+@app.route('/it/assign-device', methods=['POST'])
+@login_required
+def it_assign_device():
+    if session.get('user_department') not in ['IT', 'CEO']:
+        flash('Access denied', 'error')
+        return redirect(url_for('it_portal'))
+    
+    try:
+        asset_id = request.form['asset_id']
+        employee_id = request.form['employee_id']
+        assigned_date = request.form.get('assigned_date')
+        notes = request.form.get('notes', '')
+        
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # Update asset inventory
+        cur.execute("""
+            UPDATE asset_inventory 
+            SET assigned_to = %s, assigned_date = %s, status = 'Assigned', notes = %s
+            WHERE asset_id = %s
+        """, (employee_id, assigned_date, notes, asset_id))
+        
+        conn.commit()
+        conn.close()
+        
+        flash('Device assigned successfully!', 'success')
+        return redirect(url_for('it_portal'))
+        
+    except Exception as e:
+        flash(f'Error assigning device: {str(e)}', 'error')
+        return redirect(url_for('it_portal'))
+
+@app.route('/api/it/troubleshooting-docs')
+@login_required
+def it_get_troubleshooting_docs():
+    if session.get('user_department') not in ['IT', 'CEO']:
+        return {'error': 'Access denied'}, 403
+    
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+        
+        # Create troubleshooting_docs table if it doesn't exist
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS troubleshooting_docs (
+                doc_id INT AUTO_INCREMENT PRIMARY KEY,
+                title VARCHAR(255) NOT NULL,
+                category VARCHAR(100) NOT NULL,
+                problem_description TEXT NOT NULL,
+                solution_steps TEXT NOT NULL,
+                created_by INT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (created_by) REFERENCES employee(employee_id)
+            )
+        """)
+        
+        cur.execute("""
+            SELECT td.*, e.first_name, e.last_name
+            FROM troubleshooting_docs td
+            LEFT JOIN employee e ON td.created_by = e.employee_id
+            ORDER BY td.created_at DESC
+        """)
+        
+        docs = cur.fetchall()
+        conn.close()
+        
+        return {'docs': docs}
+        
+    except Exception as e:
+        return {'error': str(e)}, 500
+
+@app.route('/it/add-troubleshooting', methods=['POST'])
+@login_required
+def it_add_troubleshooting():
+    if session.get('user_department') not in ['IT', 'CEO']:
+        flash('Access denied', 'error')
+        return redirect(url_for('it_portal'))
+    
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # Create table if it doesn't exist
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS troubleshooting_docs (
+                doc_id INT AUTO_INCREMENT PRIMARY KEY,
+                title VARCHAR(255) NOT NULL,
+                category VARCHAR(100) NOT NULL,
+                problem_description TEXT NOT NULL,
+                solution_steps TEXT NOT NULL,
+                created_by INT,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (created_by) REFERENCES employee(employee_id)
+            )
+        """)
+        
+        cur.execute("""
+            INSERT INTO troubleshooting_docs 
+            (title, category, problem_description, solution_steps, created_by)
+            VALUES (%s, %s, %s, %s, %s)
+        """, (
+            request.form['title'], request.form['category'],
+            request.form['problem_description'], request.form['solution_steps'],
+            session.get('employee_id')
+        ))
+        
+        conn.commit()
+        conn.close()
+        
+        flash('Troubleshooting guide added successfully!', 'success')
+        return redirect(url_for('it_portal'))
+        
+    except Exception as e:
+        flash(f'Error adding guide: {str(e)}', 'error')
+        return redirect(url_for('it_portal'))
+
+#onboarding feature for hr portal
+
+
+# HR Onboarding Panel View
+@app.route('/hr_onboarding')
+def hr_onboarding():
+    conn = get_db_connection()
+    cur = conn.cursor(dictionary=True)
+    cur.execute("SELECT * FROM employee WHERE status = 'active'")
+    employees = cur.fetchall()
+    conn.close()
+    return render_template("hr_onboarding.html", employees=employees)
+
+# Add New Employee
+@app.route('/add_employee', methods=['POST'])
+def add_employee():
+    form = request.form
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        INSERT INTO employee 
+        (first_name, last_name, email, contact_number, gender, department, role_title,
+         visa_type, experience_years, salary, location, designation,
+         leaves_sick, leaves_personal, comp_off, status, joined_date)
+        VALUES (%s, %s, %s, %s, %s, %s, %s,
+                %s, %s, %s, %s, %s,
+                5, 10, 0, 'active', NOW())
+    """, (
+        form['first_name'], form['last_name'], form['email'], form['contact_number'],
+        form['gender'], form['department'], form['role_title'],
+        form['visa_type'], form['experience_years'], form['salary'],
+        form['location'], form['designation']
+    ))
+    conn.commit()
+    conn.close()
+    flash("✅ Employee added successfully!", "success")
+    return redirect(url_for('hr_onboarding'))
+
+# Edit Employee Inline
+@app.route('/edit_employee/<int:emp_id>', methods=['POST'])
+def edit_employee(emp_id):
+    form = request.form
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("""
+        UPDATE employee
+        SET first_name=%s, email=%s, contact_number=%s, department=%s, designation=%s
+        WHERE employee_id=%s
+    """, (
+        form['first_name'], form['email'], form['contact_number'],
+        form['department'], form['designation'], emp_id
+    ))
+    conn.commit()
+    conn.close()
+    flash("✏️ Employee updated.", "success")
+    return redirect(url_for('hr_onboarding'))
+
+# Deactivate Employee (soft delete)
+@app.route('/deactivate_employee/<int:emp_id>')
+def deactivate_employee(emp_id):
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("UPDATE employee SET status = 'inactive' WHERE employee_id = %s", (emp_id,))
+    conn.commit()
+    conn.close()
+    flash("🗑️ Employee deactivated.", "info")
+    return redirect(url_for('hr_onboarding'))
 
 # 🤖 Chatbot Integration
 OLLAMA_API_URL = "http://localhost:11434/api/chat"
@@ -801,6 +1632,329 @@ def chat():
                     yield chunk
 
     return Response(stream_with_context(generate()), content_type='text/plain')
+
+# HR Portal API Endpoints (Additional)
+@app.route('/api/hr/timesheet-requests')
+@login_required
+def hr_get_timesheet_requests():
+    if session.get('user_department') not in ['HR', 'Manager', 'CEO']:
+        return {'error': 'Access denied'}, 403
+    
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+        
+        cur.execute("""
+            SELECT t.*, e.first_name, e.last_name, e.department, p.project_name
+            FROM timesheet t
+            JOIN employee e ON t.employee_id = e.employee_id
+            LEFT JOIN project p ON t.project_id = p.project_id
+            WHERE t.status = 'Pending' OR t.status IS NULL
+            ORDER BY t.work_date DESC
+        """)
+        
+        requests = cur.fetchall()
+        
+        # Format dates
+        for req in requests:
+            if req['work_date']:
+                req['work_date'] = req['work_date'].strftime('%Y-%m-%d')
+        
+        conn.close()
+        
+        return {'timesheet_requests': requests}
+        
+    except Exception as e:
+        return {'error': str(e)}, 500
+
+@app.route('/hr/approve-timesheet', methods=['POST'])
+@login_required
+def hr_approve_timesheet():
+    if session.get('user_department') not in ['HR', 'Manager', 'CEO']:
+        return {'error': 'Access denied'}, 403
+    
+    try:
+        timesheet_id = request.form['timesheet_id']
+        action = request.form['action']  # 'approve' or 'reject'
+        comments = request.form.get('comments', '')
+        
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        status = 'Approved' if action == 'approve' else 'Rejected'
+        
+        cur.execute("""
+            UPDATE timesheet 
+            SET status = %s, approved_by = %s, approval_date = NOW(), approval_comments = %s
+            WHERE timesheet_id = %s
+        """, (status, session.get('employee_id'), comments, timesheet_id))
+        
+        conn.commit()
+        conn.close()
+        
+        flash(f'Timesheet {status.lower()} successfully!', 'success')
+        return redirect(url_for('hr_portal'))
+        
+    except Exception as e:
+        flash(f'Error processing timesheet: {str(e)}', 'error')
+        return redirect(url_for('hr_portal'))
+
+@app.route('/api/hr/hr-tickets')
+@login_required
+def hr_get_hr_tickets():
+    if session.get('user_department') not in ['HR', 'CEO']:
+        return {'error': 'Access denied'}, 403
+    
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+        
+        cur.execute("""
+            SELECT t.*, e.first_name, e.last_name, e.department as emp_department
+            FROM tickets t
+            JOIN employee e ON t.employee_id = e.employee_id
+            WHERE t.department = 'HR' OR t.women_safety = 1
+            ORDER BY t.created_date DESC
+        """)
+        
+        tickets = cur.fetchall()
+        
+        # Format dates
+        for ticket in tickets:
+            if ticket['created_date']:
+                ticket['created_date'] = ticket['created_date'].strftime('%Y-%m-%d %H:%M')
+            if ticket['updated_date']:
+                ticket['updated_date'] = ticket['updated_date'].strftime('%Y-%m-%d %H:%M')
+        
+        conn.close()
+        
+        return {'tickets': tickets}
+        
+    except Exception as e:
+        return {'error': str(e)}, 500
+
+@app.route('/hr/update-ticket-status', methods=['POST'])
+@login_required
+def hr_update_ticket_status():
+    if session.get('user_department') not in ['HR', 'CEO']:
+        return {'error': 'Access denied'}, 403
+    
+    try:
+        ticket_id = request.form['ticket_id']
+        status = request.form['status']
+        resolution = request.form.get('resolution', '')
+        
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        cur.execute("""
+            UPDATE tickets 
+            SET status = %s, resolution = %s, resolved_by = %s, updated_date = NOW()
+            WHERE ticket_id = %s
+        """, (status, resolution, session.get('employee_id'), ticket_id))
+        
+        conn.commit()
+        conn.close()
+        
+        flash('Ticket updated successfully!', 'success')
+        return redirect(url_for('hr_portal'))
+        
+    except Exception as e:
+        flash(f'Error updating ticket: {str(e)}', 'error')
+        return redirect(url_for('hr_portal'))
+
+@app.route('/api/hr/job-postings')
+@login_required
+def hr_get_job_postings():
+    if session.get('user_department') not in ['HR', 'CEO']:
+        return {'error': 'Access denied'}, 403
+    
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+        
+        cur.execute("""
+            SELECT jp.*, COUNT(ja.application_id) as application_count
+            FROM job_postings jp
+            LEFT JOIN job_applications ja ON jp.job_id = ja.job_id
+            GROUP BY jp.job_id
+            ORDER BY jp.created_date DESC
+        """)
+        
+        postings = cur.fetchall()
+        
+        # Format dates
+        for posting in postings:
+            if posting['created_date']:
+                posting['created_date'] = posting['created_date'].strftime('%Y-%m-%d')
+            if posting['application_deadline']:
+                posting['application_deadline'] = posting['application_deadline'].strftime('%Y-%m-%d')
+        
+        conn.close()
+        
+        return {'job_postings': postings}
+        
+    except Exception as e:
+        return {'error': str(e)}, 500
+
+@app.route('/api/hr/job-applications')
+@login_required
+def hr_get_job_applications():
+    if session.get('user_department') not in ['HR', 'CEO']:
+        return {'error': 'Access denied'}, 403
+    
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor(dictionary=True)
+        
+        cur.execute("""
+            SELECT ja.*, jp.job_title, jp.department, e.first_name, e.last_name, e.email
+            FROM job_applications ja
+            JOIN job_postings jp ON ja.job_id = jp.job_id
+            LEFT JOIN employee e ON ja.employee_id = e.employee_id
+            ORDER BY ja.application_date DESC
+        """)
+        
+        applications = cur.fetchall()
+        
+        # Format dates
+        for app in applications:
+            if app['application_date']:
+                app['application_date'] = app['application_date'].strftime('%Y-%m-%d %H:%M')
+        
+        conn.close()
+        
+        return {'applications': applications}
+        
+    except Exception as e:
+        return {'error': str(e)}, 500
+
+@app.route('/hr/update-application-status', methods=['POST'])
+@login_required
+def hr_update_application_status():
+    if session.get('user_department') not in ['HR', 'CEO']:
+        return {'error': 'Access denied'}, 403
+    
+    try:
+        application_id = request.form['application_id']
+        status = request.form['status']
+        notes = request.form.get('notes', '')
+        
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        cur.execute("""
+            UPDATE job_applications 
+            SET status = %s, hr_notes = %s, reviewed_by = %s, review_date = NOW()
+            WHERE application_id = %s
+        """, (status, notes, session.get('employee_id'), application_id))
+        
+        conn.commit()
+        conn.close()
+        
+        flash('Application status updated successfully!', 'success')
+        return redirect(url_for('hr_portal'))
+        
+    except Exception as e:
+        flash(f'Error updating application: {str(e)}', 'error')
+        return redirect(url_for('hr_portal'))
+
+@app.route('/hr/create-job', methods=['POST'])
+@login_required
+def hr_create_job():
+    if session.get('user_department') not in ['HR', 'CEO']:
+        return {'error': 'Access denied'}, 403
+    
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        cur.execute("""
+            INSERT INTO job_postings 
+            (job_title, department, job_description, requirements, salary_range, 
+             employment_type, location, application_deadline, posted_by, created_date, status)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), 'Active')
+        """, (
+            request.form['job_title'],
+            request.form['department'],
+            request.form['job_description'],
+            request.form['requirements'],
+            request.form.get('salary_range'),
+            request.form['employment_type'],
+            request.form.get('location'),
+            request.form.get('application_deadline'),
+            session.get('employee_id')
+        ))
+        
+        conn.commit()
+        conn.close()
+        
+        flash('Job posting created successfully!', 'success')
+        return redirect(url_for('hr_portal'))
+        
+    except Exception as e:
+        flash(f'Error creating job posting: {str(e)}', 'error')
+        return redirect(url_for('hr_portal'))
+
+@app.route('/hr/upload-induction', methods=['POST'])
+@login_required
+def hr_upload_induction():
+    if session.get('user_department') not in ['HR', 'CEO']:
+        return {'error': 'Access denied'}, 403
+    
+    try:
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # Handle file upload if present
+        file_path = None
+        if 'file' in request.files:
+            file = request.files['file']
+            if file.filename != '':
+                # In production, save to proper file storage
+                file_path = f"/uploads/induction/{file.filename}"
+                # file.save(file_path)  # Uncomment in production
+        
+        cur.execute("""
+            INSERT INTO induction_content 
+            (title, description, content_type, target_department, file_path, 
+             is_mandatory, created_by, created_date, is_active)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, NOW(), TRUE)
+        """, (
+            request.form['title'],
+            request.form['description'],
+            request.form['content_type'],
+            request.form.get('target_department'),
+            file_path,
+            1 if request.form.get('is_mandatory') == 'on' else 0,
+            session.get('employee_id')
+        ))
+        
+        conn.commit()
+        conn.close()
+        
+        flash('Induction content uploaded successfully!', 'success')
+        return redirect(url_for('hr_portal'))
+        
+    except Exception as e:
+        flash(f'Error uploading induction content: {str(e)}', 'error')
+        return redirect(url_for('hr_portal'))
+
+# ===== PORTAL ROUTES - Missing routes that signin redirects to =====
+
+@app.route('/admin-dashboard')
+@login_required
+def admin_dashboard():
+    """Admin Dashboard - CEO access only"""
+    if session.get('user_department') != 'CEO':
+        flash('Access denied - Admin privileges required', 'error')
+        return redirect(url_for('signin'))
+    
+    # Pass user data to template
+    return render_template('admin_dashboard.html', 
+                         user_name=session.get('user_name'),
+                         user_department=session.get('user_department'))
+
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

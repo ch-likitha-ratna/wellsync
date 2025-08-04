@@ -1,125 +1,58 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Leave Requests</title>
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-    <meta http-equiv="Pragma" content="no-cache" />
-    <meta http-equiv="Expires" content="0" />
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-    <style>
-        body {
-            background-color: #0e1628;
-            color: #fff;
-            font-family: 'Segoe UI', sans-serif;
-        }
-        table {
-            width: 90%;
-            margin: 40px auto;
-            border-collapse: collapse;
-            background-color: #1f2a44;
-            border-radius: 10px;
-            overflow: hidden;
-        }
-        th, td {
-            padding: 16px;
-            text-align: center;
-            border-bottom: 1px solid #2c3e50;
-        }
-        th {
-            background-color: #1b253b;
-            color: #93b5ff;
-            font-size: 18px;
-        }
-        tr:hover {
-            background-color: #2a3d66;
-        }
-        .status-approved {
-            color: #00ff88;
-            font-weight: bold;
-        }
-        .status-rejected {
-            color: #ff4c4c;
-            font-weight: bold;
-        }
-        .status-pending {
-            color: #f0ad4e;
-            font-weight: bold;
-        }
-        .action-btn {
-            border: none;
-            background: none;
-            cursor: pointer;
-            font-size: 20px;
-            margin: 0 5px;
-        }
-        .back-link {
-            display: block;
-            text-align: center;
-            margin: 30px auto;
-            font-size: 16px;
-            color: #5ca8ff;
-            text-decoration: none;
-        }
-        .back-link:hover {
-            text-decoration: underline;
-        }
-    </style>
-</head>
-<body>
+{% extends 'base.html' %}
+{% block content %}
+<div class="p-6 max-w-7xl mx-auto bg-white shadow-md rounded-md mt-8">
+    <h2 class="text-2xl font-semibold text-gray-800 mb-4">Pending Leave Approvals 🧾</h2>
 
-    <h2 style="text-align: center; color: #93b5ff;"><span>🗓️</span> Leave Requests</h2>
+    <div class="overflow-x-auto">
+        <table class="min-w-full text-sm text-center border border-gray-300">
+            <thead class="bg-gray-100 text-gray-600 uppercase text-xs">
+                <tr>
+                    <th class="px-4 py-2 border">Employee</th>
+                    <th class="px-4 py-2 border">Type</th>
+                    <th class="px-4 py-2 border">Sub Type</th>
+                    <th class="px-4 py-2 border">Start</th>
+                    <th class="px-4 py-2 border">End</th>
+                    <th class="px-4 py-2 border">Days</th>
+                    <th class="px-4 py-2 border">Reason</th>
+                    <th class="px-4 py-2 border">Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for req in leave_requests %}
+                <tr class="border-t border-gray-200 hover:bg-gray-50">
+                    <td class="px-4 py-2 border">{{ req.first_name }} {{ req.last_name }}</td>
+                    <td class="px-4 py-2 border">{{ req.leave_type }}</td>
+                    <td class="px-4 py-2 border">{{ req.sub_type or '-' }}</td>
+                    <td class="px-4 py-2 border">{{ req.start_date }}</td>
+                    <td class="px-4 py-2 border">{{ req.end_date }}</td>
+                    <td class="px-4 py-2 border">{{ req.total_days }}</td>
+                    <td class="px-4 py-2 border">{{ req.reason }}</td>
+                    <td class="px-4 py-2 border">
+                        <form action="{{ url_for('update_leave_status') }}" method="POST">
+                            <input type="hidden" name="leave_id" value="{{ req.leave_id }}">
+                            <select name="status" onchange="toggleCommentBox(this, '{{ req.leave_id }}')"
+                                class="form-control">
+                                <option value="Approved">Approve</option>
+                                <option value="Rejected">Reject</option>
+                            </select>
+                            <div id="commentBox-{{ req.leave_id }}" class="mt-2 hidden">
+                                <textarea name="rejection_reason" rows="2" class="form-control"
+                                    placeholder="Reason for rejection"></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-submit mt-2">Submit</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
 
-    <table>
-        <thead>
-            <tr>
-                <th>Employee</th>
-                <th>Date</th>
-                <th>Days</th>
-                <th>Type</th>
-                <th>Reason</th>
-                <th>Status</th>
-                <th>Action</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for req in requests %}
-            <tr>
-                <td>{{ req[1] }}</td>
-                <td>{{ req[2] }}</td>
-                <td>{{ req[3] }}</td>
-                <td>{{ req[4] }}</td>
-                <td>{{ req[5] }}</td>
-                <td>
-                    {% if req[6] == 'Approved' %}
-                        <span class="status-approved">Approved</span>
-                    {% elif req[6] == 'Rejected' %}
-                        <span class="status-rejected">Rejected</span>
-                    {% else %}
-                        <span class="status-pending">Pending</span>
-                    {% endif %}
-                </td>
-                <td>
-                    {% if req[6] == 'Pending' %}
-                    <form method="POST" style="display:inline;">
-                        <input type="hidden" name="req_id" value="{{ req[0] }}">
-                        <input type="hidden" name="action" value="Approved">
-                        <button type="submit" class="action-btn" title="Approve">✅</button>
-                    </form>
-                    <form method="POST" style="display:inline;">
-                        <input type="hidden" name="req_id" value="{{ req[0] }}">
-                        <input type="hidden" name="action" value="Rejected">
-                        <button type="submit" class="action-btn" title="Reject">❌</button>
-                    </form>
-                    {% else %}
-                        —
-                    {% endif %}
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-
-    <a class="back-link" href="{{ url_for('hr_portal') }}">← Back to HR Dashboard</a>
-
-</body>
-</html>
+<script>
+    function toggleCommentBox(select, id) {
+        const box = document.getElementById('commentBox-' + id);
+        box.classList.toggle('hidden', select.value !== 'Rejected');
+    }
+</script>
+{% endblock %}

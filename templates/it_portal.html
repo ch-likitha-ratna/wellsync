@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IT Help Desk - NexIQoN Portal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+
+<body class="bg-gray-50">
+  <!-- Header -->
+  <header class="bg-blue-600 text-white p-4 shadow-lg">
+    <div class="container mx-auto flex justify-between items-center">
+      <div class="flex items-center space-x-4">
+        <i class="fas fa-tools text-2xl"></i>
+        <h1 class="text-2xl font-bold">IT Help Desk Portal</h1>
+      </div>
+      <div class="flex items-center space-x-4">
+        <span>Welcome, {{ session.user_name }}</span>
+        <a href="/logout" class="bg-red-500 hover:bg-red-600 px-4 py-2 rounded">
+          <i class="fas fa-sign-out-alt mr-2"></i>Logout
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Navigation Tabs -->
+  <div class="bg-white shadow-sm border-b">
+    <div class="container mx-auto">
+      <nav class="flex space-x-8">
+        <button onclick="showTab('dashboard')"
+          class="tab-btn py-4 px-6 border-b-2 border-blue-500 text-blue-600 font-medium">
+          <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
+        </button>
+        <button onclick="showTab('tickets')"
+          class="tab-btn py-4 px-6 border-b-2 border-transparent hover:border-gray-300">
+          <i class="fas fa-ticket-alt mr-2"></i>Tickets
+        </button>
+        <button onclick="showTab('devices')"
+          class="tab-btn py-4 px-6 border-b-2 border-transparent hover:border-gray-300">
+          <i class="fas fa-laptop mr-2"></i>Devices
+        </button>
+        <button onclick="showTab('docs')" class="tab-btn py-4 px-6 border-b-2 border-transparent hover:border-gray-300">
+          <i class="fas fa-book mr-2"></i>Docs
+        </button>
+        <button onclick="showTab('employee')"
+          class="tab-btn py-4 px-6 border-b-2 border-transparent hover:border-gray-300">
+          <i class="fas fa-user mr-2"></i>Employee
+        </button>
+        <button onclick="showTab('career')"
+          class="tab-btn py-4 px-6 border-b-2 border-transparent hover:border-gray-300">
+          <i class="fas fa-graduation-cap mr-2"></i>Career
+        </button>
+      </nav>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <main class="container mx-auto p-6">
+    <!-- Dashboard Tab -->
+    <div id="dashboard-tab" class="tab-content">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white p-6 rounded-lg shadow-md">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-500 text-sm">Open Tickets</p>
+              <p id="open-tickets" class="text-3xl font-bold text-red-600">-</p>
+            </div>
+            <i class="fas fa-exclamation-triangle text-red-500 text-2xl"></i>
+          </div>
+        </div>
+        <div class="bg-white p-6 rounded-lg shadow-md">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-500 text-sm">Total Devices</p>
+              <p id="total-devices" class="text-3xl font-bold text-blue-600">-</p>
+            </div>
+            <i class="fas fa-desktop text-blue-500 text-2xl"></i>
+          </div>
+        </div>
+        <div class="bg-white p-6 rounded-lg shadow-md">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-500 text-sm">Available</p>
+              <p id="available-devices" class="text-3xl font-bold text-green-600">-</p>
+            </div>
+            <i class="fas fa-check-circle text-green-500 text-2xl"></i>
+          </div>
+        </div>
+        <div class="bg-white p-6 rounded-lg shadow-md">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-gray-500 text-sm">Repairs</p>
+              <p id="pending-repairs" class="text-3xl font-bold text-yellow-600">-</p>
+            </div>
+            <i class="fas fa-wrench text-yellow-500 text-2xl"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Activity -->
+      <div class="bg-white rounded-lg shadow-md p-6">
+        <h3 class="text-lg font-semibold mb-4">Recent IT Activity</h3>
+        <div id="recent-activity" class="space-y-3">
+          <!-- Activity items loaded via JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Tickets Tab -->
+    <div id="tickets-tab" class="tab-content hidden">
+      <div class="bg-white rounded-lg shadow-md p-6">
+        <h3 class="text-lg font-semibold mb-6">IT Support Tickets</h3>
+        <div class="overflow-x-auto">
+          <table class="min-w-full table-auto">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-4 py-2 text-left">ID</th>
+                <th class="px-4 py-2 text-left">Employee</th>
+                <th class="px-4 py-2 text-left">Issue</th>
+                <th class="px-4 py-2 text-left">Priority</th>
+                <th class="px-4 py-2 text-left">Status</th>
+                <th class="px-4 py-2 text-left">Date</th>
+                <th class="px-4 py-2 text-left">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="tickets-table">
+              <!-- Loaded via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Devices Tab -->
+    <div id="devices-tab" class="tab-content hidden">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <!-- Add Device Form -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <h3 class="text-lg font-semibold mb-4">Add New Device</h3>
+          <form action="/it/add-device" method="POST">
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium mb-2">Type</label>
+                <select name="device_type" required class="w-full border rounded px-3 py-2">
+                  <option value="">Select</option>
+                  <option value="Laptop">Laptop</option>
+                  <option value="Desktop">Desktop</option>
+                  <option value="Monitor">Monitor</option>
+                  <option value="Printer">Printer</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium mb-2">Brand</label>
+                <input type="text" name="brand" required class="w-full border rounded px-3 py-2">
+              </div>
+              <div>
+                <label class="block text-sm font-medium mb-2">Model</label>
+                <input type="text" name="model" required class="w-full border rounded px-3 py-2">
+              </div>
+              <div>
+                <label class="block text-sm font-medium mb-2">Serial</label>
+                <input type="text" name="serial_number" required class="w-full border rounded px-3 py-2">
+              </div>
+            </div>
+            <button type="submit" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+              Add Device
+            </button>
+          </form>
+        </div>
+
+        <!-- Assign Device Form -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <h3 class="text-lg font-semibold mb-4">Assign Device</h3>
+          <form action="/it/assign-device" method="POST">
+            <div class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium mb-2">Device</label>
+                <select name="asset_id" required class="w-full border rounded px-3 py-2" id="available-devices-select">
+                  <option value="">Select Device</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium mb-2">Employee</label>
+                <select name="employee_id" required class="w-full border rounded px-3 py-2" id="employees-select">
+                  <option value="">Select Employee</option>
+                </select>
+              </div>
+            </div>
+            <button type="submit" class="mt-4 bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+              Assign Device
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Device Inventory -->
+      <div class="bg-white rounded-lg shadow-md p-6">
+        <h3 class="text-lg font-semibold mb-4">Device Inventory</h3>
+        <div class="overflow-x-auto">
+          <table class="min-w-full table-auto">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-4 py-2 text-left">ID</th>
+                <th class="px-4 py-2 text-left">Type</th>
+                <th class="px-4 py-2 text-left">Brand/Model</th>
+                <th class="px-4 py-2 text-left">Serial</th>
+                <th class="px-4 py-2 text-left">Assigned To</th>
+                <th class="px-4 py-2 text-left">Status</th>
+              </tr>
+            </thead>
+            <tbody id="devices-table">
+              <!-- Loaded via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Docs Tab -->
+    <div id="docs-tab" class="tab-content hidden">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <h3 class="text-lg font-semibold mb-4">Add Guide</h3>
+          <form action="/it/add-troubleshooting" method="POST">
+            <div class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium mb-2">Title</label>
+                <input type="text" name="title" required class="w-full border rounded px-3 py-2">
+              </div>
+              <div>
+                <label class="block text-sm font-medium mb-2">Category</label>
+                <select name="category" required class="w-full border rounded px-3 py-2">
+                  <option value="">Select</option>
+                  <option value="Hardware">Hardware</option>
+                  <option value="Software">Software</option>
+                  <option value="Network">Network</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-sm font-medium mb-2">Problem</label>
+                <textarea name="problem_description" rows="3" required
+                  class="w-full border rounded px-3 py-2"></textarea>
+              </div>
+              <div>
+                <label class="block text-sm font-medium mb-2">Solution</label>
+                <textarea name="solution_steps" rows="4" required class="w-full border rounded px-3 py-2"></textarea>
+              </div>
+            </div>
+            <button type="submit" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+              Add Guide
+            </button>
+          </form>
+        </div>
+
+        <div class="lg:col-span-2 bg-white rounded-lg shadow-md p-6">
+          <h3 class="text-lg font-semibold mb-4">Knowledge Base</h3>
+          <div id="troubleshooting-docs" class="space-y-4">
+            <!-- Loaded via JS -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Employee Portal Tab -->
+    <div id="employee-tab" class="tab-content hidden">
+      <div class="bg-white rounded-lg shadow-md p-6">
+        <h3 class="text-lg font-semibold mb-4">Employee Portal Access</h3>
+        <p class="text-gray-600 mb-4">Access employee portal features.</p>
+        <a href="/employee-portal" class="bg-blue-600 text-white px-6 py-3 rounded hover:bg-blue-700 inline-block">
+          Go to Employee Portal
+        </a>
+      </div>
+    </div>
+
+    <!-- Career Portal Tab -->
+    <div id="career-tab" class="tab-content hidden">
+      <div class="bg-white rounded-lg shadow-md p-6">
+        <h3 class="text-lg font-semibold mb-4">Career Portal Access</h3>
+        <p class="text-gray-600 mb-4">Access courses and certifications.</p>
+        <a href="/career-portal" class="bg-green-600 text-white px-6 py-3 rounded hover:bg-green-700 inline-block">
+          Go to Career Portal
+        </a>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    function showTab(tabName) {
+      document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('border-blue-500', 'text-blue-600');
+        btn.classList.add('border-transparent');
+      });
+
+      document.getElementById(tabName + '-tab').classList.remove('hidden');
+      event.target.classList.add('border-blue-500', 'text-blue-600');
+
+      if (tabName === 'dashboard') loadDashboard();
+      else if (tabName === 'tickets') loadTickets();
+      else if (tabName === 'devices') loadDevices();
+      else if (tabName === 'docs') loadDocs();
+    }
+
+    function loadDashboard() {
+      fetch('/api/it/dashboard-stats')
+        .then(response => response.json())
+        .then(data => {
+          if (!data.error) {
+            document.getElementById('open-tickets').textContent = data.open_tickets;
+            document.getElementById('total-devices').textContent = data.total_devices;
+            document.getElementById('available-devices').textContent = data.available_devices;
+            document.getElementById('pending-repairs').textContent = data.pending_repairs;
+          }
+        });
+    }
+
+    function loadTickets() {
+      fetch('/api/it/tickets')
+        .then(response => response.json())
+        .then(data => {
+          const tbody = document.getElementById('tickets-table');
+          tbody.innerHTML = '';
+
+          if (data.tickets && data.tickets.length > 0) {
+            data.tickets.forEach(ticket => {
+              const row = `
+                                <tr class="border-b hover:bg-gray-50">
+                                    <td class="px-4 py-2">#${ticket.ticket_id}</td>
+                                    <td class="px-4 py-2">${ticket.first_name} ${ticket.last_name}</td>
+                                    <td class="px-4 py-2">${ticket.issue_description}</td>
+                                    <td class="px-4 py-2"><span class="px-2 py-1 rounded text-xs bg-red-100 text-red-800">${ticket.severity}</span></td>
+                                    <td class="px-4 py-2"><span class="px-2 py-1 rounded text-xs bg-yellow-100 text-yellow-800">${ticket.status}</span></td>
+                                    <td class="px-4 py-2">${ticket.submitted_on}</td>
+                                    <td class="px-4 py-2">
+                                        <form action="/it/update-ticket" method="POST" style="display:inline;">
+                                            <input type="hidden" name="ticket_id" value="${ticket.ticket_id}">
+                                            <select name="status" onchange="this.form.submit()" class="text-sm border rounded px-2 py-1">
+                                                <option value="Open" ${ticket.status === 'Open' ? 'selected' : ''}>Open</option>
+                                                <option value="In Progress" ${ticket.status === 'In Progress' ? 'selected' : ''}>In Progress</option>
+                                                <option value="Resolved" ${ticket.status === 'Resolved' ? 'selected' : ''}>Resolved</option>
+                                            </select>
+                                        </form>
+                                    </td>
+                                </tr>
+                            `;
+              tbody.innerHTML += row;
+            });
+          } else {
+            tbody.innerHTML = '<tr><td colspan="7" class="px-4 py-8 text-center text-gray-500">No tickets found</td></tr>';
+          }
+        });
+    }
+
+    function loadDevices() {
+      fetch('/api/it/devices')
+        .then(response => response.json())
+        .then(data => {
+          const tbody = document.getElementById('devices-table');
+          tbody.innerHTML = '';
+
+          if (data.devices) {
+            data.devices.forEach(device => {
+              const row = `
+                                <tr class="border-b hover:bg-gray-50">
+                                    <td class="px-4 py-2">${device.asset_id}</td>
+                                    <td class="px-4 py-2">${device.device_type}</td>
+                                    <td class="px-4 py-2">${device.brand} ${device.model}</td>
+                                    <td class="px-4 py-2">${device.serial_number}</td>
+                                    <td class="px-4 py-2">${device.assigned_to || 'Unassigned'}</td>
+                                    <td class="px-4 py-2"><span class="px-2 py-1 rounded text-xs bg-green-100 text-green-800">${device.status}</span></td>
+                                </tr>
+                            `;
+              tbody.innerHTML += row;
+            });
+
+            // Populate dropdowns
+            const availableSelect = document.getElementById('available-devices-select');
+            availableSelect.innerHTML = '<option value="">Select Device</option>';
+            data.devices.filter(d => d.status === 'Available').forEach(device => {
+              availableSelect.innerHTML += `<option value="${device.asset_id}">${device.device_type} - ${device.brand} ${device.model}</option>`;
+            });
+          }
+        });
+
+      // Load employees for assignment
+      fetch('/api/hr/employees')
+        .then(response => response.json())
+        .then(data => {
+          const select = document.getElementById('employees-select');
+          select.innerHTML = '<option value="">Select Employee</option>';
+          if (data.employees) {
+            data.employees.forEach(emp => {
+              select.innerHTML += `<option value="${emp.employee_id}">${emp.first_name} ${emp.last_name}</option>`;
+            });
+          }
+        });
+    }
+
+    function loadDocs() {
+      fetch('/api/it/troubleshooting-docs')
+        .then(response => response.json())
+        .then(data => {
+          const docsDiv = document.getElementById('troubleshooting-docs');
+          docsDiv.innerHTML = '';
+
+          if (data.docs && data.docs.length > 0) {
+            data.docs.forEach(doc => {
+              const docItem = `
+                                <div class="border rounded-lg p-4">
+                                    <h4 class="font-semibold text-lg mb-2">${doc.title}</h4>
+                                    <p class="text-sm text-gray-600 mb-2">Category: ${doc.category}</p>
+                                    <p class="text-gray-700 mb-3">${doc.problem_description}</p>
+                                    <div class="bg-gray-50 p-3 rounded">
+                                        <strong>Solution:</strong>
+                                        <p class="mt-1">${doc.solution_steps}</p>
+                                    </div>
+                                </div>
+                            `;
+              docsDiv.innerHTML += docItem;
+            });
+          } else {
+            docsDiv.innerHTML = '<p class="text-gray-500">No troubleshooting guides found</p>';
+          }
+        });
+    }
+
+    // Load dashboard on page load
+    document.addEventListener('DOMContentLoaded', function () {
+      loadDashboard();
+    });
+  </script>
+</body>
+
+</html>

@@ -1,42 +1,676 @@
-<!-- templates/hr_portal.html -->
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
-    <title>NexIQon HR Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HR Management Portal - NexIQoN</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
-<body class="bg-gray-900 text-white h-screen p-10">
 
-    <!-- ✅ Navigation Bar -->
-    <nav class="bg-gray-800 p-4 mb-6 flex justify-between items-center rounded shadow">
-        <h1 class="text-lg font-bold text-blue-400">NexIQon HR Portal</h1>
-        <a href="#" onclick="confirmHRLogout()" class="text-red-400 hover:underline">Logout</a>
-
+<body class="bg-gray-50 min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <h1 class="text-xl font-semibold text-gray-900">NexIQoN HR Management</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="/employee-portal" class="text-blue-600 hover:text-blue-800">Employee Portal</a>
+                    <a href="/career-portal" class="text-purple-600 hover:text-purple-800">Career Portal</a>
+                    <span class="text-gray-700">{{ user_name }}</span>
+                    <a href="/logout"
+                        class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded text-sm">Logout</a>
+                </div>
+            </div>
+        </div>
     </nav>
 
-    <!-- ✅ Portal Heading -->
-    <h1 class="text-3xl font-bold mb-6 text-center text-blue-400">Welcome to NexIQon HR Portal</h1>
+    <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <!-- Tab Navigation -->
+        <div class="mb-6">
+            <nav class="flex space-x-8">
+                <button onclick="showTab('dashboard')"
+                    class="tab-btn active border-b-2 border-green-500 py-2 px-1 text-green-600 font-medium">Dashboard</button>
+                <button onclick="showTab('skill-search')"
+                    class="tab-btn border-b-2 border-transparent py-2 px-1 text-gray-500 hover:text-gray-700">Skill
+                    Search</button>
+                <button onclick="showTab('onboarding')"
+                    class="tab-btn border-b-2 border-transparent py-2 px-1 text-gray-500 hover:text-gray-700">Employee
+                    Management</button>
+                <button onclick="showTab('induction')"
+                    class="tab-btn border-b-2 border-transparent py-2 px-1 text-gray-500 hover:text-gray-700">Induction</button>
+                <button onclick="showTab('timesheets')"
+                    class="tab-btn border-b-2 border-transparent py-2 px-1 text-gray-500 hover:text-gray-700">Timesheet
+                    Approval</button>
+                <button onclick="showTab('tickets')"
+                    class="tab-btn border-b-2 border-transparent py-2 px-1 text-gray-500 hover:text-gray-700">Tickets</button>
+                <button onclick="showTab('jobs')"
+                    class="tab-btn border-b-2 border-transparent py-2 px-1 text-gray-500 hover:text-gray-700">Job
+                    Postings</button>
+                <button onclick="showTab('ats')"
+                    class="tab-btn border-b-2 border-transparent py-2 px-1 text-gray-500 hover:text-gray-700">ATS</button>
+            </nav>
+        </div>
 
-    <!-- ✅ Action Grid -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-3xl mx-auto">
-        <a href="{{ url_for('manage_employees') }}" class="bg-gray-800 p-4 rounded shadow hover:bg-gray-700 transition">👥 Manage Employees</a>
-        <a href="{{ url_for('hr_leave_requests') }}" class="bg-gray-800 p-4 rounded shadow hover:bg-gray-700 transition">📝 Leave Requests</a>
-        <a href="{{ url_for('hr_announcements') }}" class="bg-gray-800 p-4 rounded shadow hover:bg-gray-700 transition">📢 Announcements</a>
-        <a href="{{ url_for('hr_feedback') }}" class="bg-gray-800 p-4 rounded shadow hover:bg-gray-700 transition">🎯 Performance & Feedback</a>
-        <a href="{{ url_for('onboarding_tracker') }}" class="bg-gray-800 p-4 rounded shadow hover:bg-gray-700 transition">🗓️ Onboarding Tracker</a>
+        <!-- Dashboard Tab -->
+        <div id="dashboard" class="tab-content">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-users text-blue-500 text-2xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-500">Total Employees</p>
+                            <p class="text-2xl font-semibold text-gray-900" id="total-employees">--</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-calendar-alt text-yellow-500 text-2xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-500">Pending Leaves</p>
+                            <p class="text-2xl font-semibold text-gray-900" id="pending-leaves">--</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-clock text-green-500 text-2xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-500">Pending Timesheets</p>
+                            <p class="text-2xl font-semibold text-gray-900" id="pending-timesheets">--</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <i class="fas fa-briefcase text-purple-500 text-2xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-500">Active Job Postings</p>
+                            <p class="text-2xl font-semibold text-gray-900" id="active-jobs">--</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Skill Search Tab -->
+        <div id="skill-search" class="tab-content hidden">
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Search Employee Skills & Badges</h3>
+                <div class="mb-4">
+                    <input type="text" id="skill-search-input"
+                        placeholder="Enter skill name (e.g., AWS, Python, Machine Learning)"
+                        class="w-full rounded-md border-gray-300 shadow-sm">
+                    <button onclick="searchEmployeeSkills()"
+                        class="mt-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
+                        Search
+                    </button>
+                </div>
+                <div id="skill-search-results" class="space-y-4">
+                    <!-- Search results will appear here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Employee Management Tab -->
+        <div id="onboarding" class="tab-content hidden">
+            <div class="space-y-6">
+                <!-- Add Employee Form -->
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Add New Employee</h3>
+                    <form method="POST" action="/hr/add-employee" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">First Name *</label>
+                            <input type="text" name="first_name" required
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Last Name *</label>
+                            <input type="text" name="last_name" required
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Email *</label>
+                            <input type="email" name="email" required
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Contact Number *</label>
+                            <input type="tel" name="contact_number" required
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Department *</label>
+                            <select name="department" required
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                                <option value="">Select Department</option>
+                                <option value="CEO">CEO</option>
+                                <option value="CTO">CTO</option>
+                                <option value="Manager">Manager</option>
+                                <option value="HR">HR</option>
+                                <option value="Employee">Employee</option>
+                                <option value="IT">IT</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Role Title *</label>
+                            <input type="text" name="role_title" required
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Salary *</label>
+                            <input type="number" name="salary" required
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Location *</label>
+                            <input type="text" name="location" required
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                        </div>
+                        <div class="md:col-span-2">
+                            <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded">
+                                Add Employee
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Employee List -->
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Employee Management</h3>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200" id="employees-table">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Name</th>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Email</th>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Department</th>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Role</th>
+                                    <th
+                                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200" id="employees-tbody">
+                                <!-- Employee rows will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Induction Management Tab -->
+        <div id="induction" class="tab-content hidden">
+            <div class="space-y-6">
+                <!-- Upload Document Form -->
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Upload Induction Document</h3>
+                    <form method="POST" action="/hr/upload-induction" enctype="multipart/form-data" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Document Title *</label>
+                            <input type="text" name="title" required
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Category *</label>
+                            <select name="category" required
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                                <option value="">Select Category</option>
+                                <option value="company-overview">Company Overview</option>
+                                <option value="code-of-conduct">Code of Conduct</option>
+                                <option value="it-security">IT Security</option>
+                                <option value="work-schedule">Work Schedule & Attendance</option>
+                                <option value="policies">HR Policies</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Description</label>
+                            <textarea name="description" rows="3"
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Upload File</label>
+                            <input type="file" name="document" accept=".pdf,.doc,.docx,.ppt,.pptx"
+                                class="mt-1 block w-full">
+                        </div>
+                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded">
+                            Upload Document
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Existing Documents -->
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Induction Documents</h3>
+                    <div id="induction-docs" class="space-y-3">
+                        <!-- Documents will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Timesheet Approval Tab -->
+        <div id="timesheets" class="tab-content hidden">
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Pending Timesheet Approvals</h3>
+                <div id="timesheet-requests" class="space-y-4">
+                    <!-- Timesheet requests will be loaded here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Ticket Management Tab -->
+        <div id="tickets" class="tab-content hidden">
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">HR Ticket Queue</h3>
+                <div id="hr-tickets" class="space-y-4">
+                    <!-- HR tickets will be loaded here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Job Postings Tab -->
+        <div id="jobs" class="tab-content hidden">
+            <div class="space-y-6">
+                <!-- Create Job Posting Form -->
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Create Job Posting</h3>
+                    <form method="POST" action="/hr/create-job" class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Position Name *</label>
+                                <input type="text" name="position_name" required
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Level *</label>
+                                <select name="level" required
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                                    <option value="">Select Level</option>
+                                    <option value="Entry">Entry</option>
+                                    <option value="Mid">Mid</option>
+                                    <option value="Senior">Senior</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Location *</label>
+                                <input type="text" name="job_location" required
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Salary *</label>
+                                <input type="number" name="salary" required
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Skills Required *</label>
+                            <input type="text" name="skills_required" required
+                                placeholder="e.g., Python, AWS, Machine Learning"
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Job Description *</label>
+                            <textarea name="job_description" rows="4" required
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></textarea>
+                        </div>
+                        <button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded">
+                            Create Job Posting
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Active Job Postings -->
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Active Job Postings</h3>
+                    <div id="job-postings-list" class="space-y-4">
+                        <!-- Job postings will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ATS Tab -->
+        <div id="ats" class="tab-content hidden">
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Applicant Tracking System</h3>
+                <div id="job-applications" class="space-y-4">
+                    <!-- Job applications will be loaded here -->
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
-function confirmHRLogout() {
-    if (confirm("Are you sure you want to logout from the HR portal?")) {
-        window.location.href = "{{ url_for('hr_logout') }}";
-    }
-}
-</script>
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active', 'border-green-500', 'text-green-600');
+                btn.classList.add('border-transparent', 'text-gray-500');
+            });
 
+            // Show selected tab
+            document.getElementById(tabName).classList.remove('hidden');
+            event.target.classList.add('active', 'border-green-500', 'text-green-600');
+            event.target.classList.remove('border-transparent', 'text-gray-500');
 
+            // Load content based on tab
+            if (tabName === 'dashboard') loadDashboardStats();
+            if (tabName === 'onboarding') loadEmployees();
+            if (tabName === 'timesheets') loadTimesheetRequests();
+            if (tabName === 'tickets') loadHRTickets();
+            if (tabName === 'jobs') loadJobPostings();
+            if (tabName === 'ats') loadJobApplications();
+        }
 
+        function loadDashboardStats() {
+            fetch('/api/hr/dashboard-stats')
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('total-employees').textContent = data.total_employees || '0';
+                    document.getElementById('pending-leaves').textContent = data.pending_leaves || '0';
+                    document.getElementById('pending-timesheets').textContent = data.pending_timesheets || '0';
+                    document.getElementById('active-jobs').textContent = data.active_jobs || '0';
+                })
+                .catch(error => console.error('Error loading dashboard stats:', error));
+        }
 
+        function searchEmployeeSkills() {
+            const skill = document.getElementById('skill-search-input').value;
+            const resultsDiv = document.getElementById('skill-search-results');
+
+            if (!skill.trim()) {
+                resultsDiv.innerHTML = '<p class="text-gray-500">Please enter a skill to search</p>';
+                return;
+            }
+
+            fetch(`/api/career/search-skills?skill=${encodeURIComponent(skill)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.employees && data.employees.length > 0) {
+                        resultsDiv.innerHTML = data.employees.map(emp => `
+                            <div class="bg-gray-50 p-4 rounded border">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <h4 class="font-medium text-gray-900">${emp.first_name} ${emp.last_name}</h4>
+                                        <p class="text-sm text-gray-600">${emp.role_title} - ${emp.department}</p>
+                                        <p class="text-sm text-gray-500 mt-1">Badges: ${emp.badges || 'None'}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('');
+                    } else {
+                        resultsDiv.innerHTML = '<p class="text-gray-500">No employees found with this skill</p>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error searching skills:', error);
+                    resultsDiv.innerHTML = '<p class="text-red-500">Error searching skills</p>';
+                });
+        }
+
+        function loadEmployees() {
+            fetch('/api/hr/employees')
+                .then(response => response.json())
+                .then(data => {
+                    const tbody = document.getElementById('employees-tbody');
+                    if (data.employees && data.employees.length > 0) {
+                        tbody.innerHTML = data.employees.map(emp => `
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                    ${emp.first_name} ${emp.last_name}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${emp.email}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${emp.department}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${emp.role_title}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                    <button onclick="editEmployee(${emp.employee_id})" class="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
+                                    <button onclick="deactivateEmployee(${emp.employee_id})" class="text-red-600 hover:text-red-900">Deactivate</button>
+                                </td>
+                            </tr>
+                        `).join('');
+                    } else {
+                        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-gray-500">No employees found</td></tr>';
+                    }
+                })
+                .catch(error => console.error('Error loading employees:', error));
+        }
+
+        function loadTimesheetRequests() {
+            fetch('/api/hr/timesheet-requests')
+                .then(response => response.json())
+                .then(data => {
+                    const container = document.getElementById('timesheet-requests');
+                    if (data.timesheet_requests && data.timesheet_requests.length > 0) {
+                        container.innerHTML = `
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full divide-y divide-gray-200">
+                                    <thead class="bg-gray-50">
+                                        <tr>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Employee</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Hours</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Project</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="bg-white divide-y divide-gray-200">
+                                        ${data.timesheet_requests.map(req => `
+                                            <tr>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                                    ${req.first_name} ${req.last_name}
+                                                </td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${req.work_date}</td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${req.hours_logged}</td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${req.project_name || 'N/A'}</td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                                    <form method="POST" action="/hr/approve-timesheet" class="inline">
+                                                        <input type="hidden" name="timesheet_id" value="${req.timesheet_id}">
+                                                        <button type="submit" name="action" value="approve" 
+                                                                class="text-green-600 hover:text-green-900 mr-3">Approve</button>
+                                                        <button type="submit" name="action" value="reject" 
+                                                                class="text-red-600 hover:text-red-900">Reject</button>
+                                                    </form>
+                                                </td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        `;
+                    } else {
+                        container.innerHTML = '<p class="text-gray-500">No pending timesheet requests</p>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading timesheet requests:', error);
+                    document.getElementById('timesheet-requests').innerHTML = '<p class="text-red-500">Error loading timesheet requests</p>';
+                });
+        }
+
+        function loadHRTickets() {
+            fetch('/api/hr/hr-tickets')
+                .then(response => response.json())
+                .then(data => {
+                    const container = document.getElementById('hr-tickets');
+                    if (data.tickets && data.tickets.length > 0) {
+                        container.innerHTML = `
+                            <div class="space-y-4">
+                                ${data.tickets.map(ticket => `
+                                    <div class="border rounded-lg p-4">
+                                        <div class="flex justify-between items-start">
+                                            <div class="flex-1">
+                                                <h4 class="font-medium text-gray-900">${ticket.subject || 'No Subject'}</h4>
+                                                <p class="text-sm text-gray-600 mt-1">${ticket.issue_description}</p>
+                                                <div class="flex items-center space-x-4 mt-2 text-xs text-gray-500">
+                                                    <span>${ticket.first_name} ${ticket.last_name}</span>
+                                                    <span>${ticket.severity}</span>
+                                                    <span>${ticket.created_date}</span>
+                                                    ${ticket.women_safety ? '<span class="text-red-600 font-medium">Women Safety</span>' : ''}
+                                                </div>
+                                            </div>
+                                            <div class="ml-4">
+                                                <span class="px-2 py-1 rounded text-xs ${ticket.status === 'Open' ? 'bg-red-100 text-red-800' :
+                                ticket.status === 'In Progress' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}">
+                                                    ${ticket.status}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        ${ticket.status !== 'Resolved' ? `
+                                            <form method="POST" action="/hr/update-ticket-status" class="mt-3">
+                                                <input type="hidden" name="ticket_id" value="${ticket.ticket_id}">
+                                                <div class="flex items-center space-x-2">
+                                                    <select name="status" class="text-sm border rounded px-2 py-1">
+                                                        <option value="In Progress">In Progress</option>
+                                                        <option value="Resolved">Resolved</option>
+                                                    </select>
+                                                    <input type="text" name="resolution" placeholder="Resolution notes" 
+                                                           class="text-sm border rounded px-2 py-1 flex-1">
+                                                    <button type="submit" class="bg-blue-600 text-white px-3 py-1 rounded text-sm">Update</button>
+                                                </div>
+                                            </form>
+                                        ` : ''}
+                                    </div>
+                                `).join('')}
+                            </div>
+                        `;
+                    } else {
+                        container.innerHTML = '<p class="text-gray-500">No HR tickets found</p>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading HR tickets:', error);
+                    document.getElementById('hr-tickets').innerHTML = '<p class="text-red-500">Error loading HR tickets</p>';
+                });
+        }
+
+        function loadJobPostings() {
+            fetch('/api/hr/job-postings')
+                .then(response => response.json())
+                .then(data => {
+                    const container = document.getElementById('job-postings-list');
+                    if (data.job_postings && data.job_postings.length > 0) {
+                        container.innerHTML = `
+                            <div class="space-y-4">
+                                ${data.job_postings.map(job => `
+                                    <div class="border rounded-lg p-4">
+                                        <div class="flex justify-between items-start">
+                                            <div>
+                                                <h4 class="font-medium text-gray-900">${job.job_title}</h4>
+                                                <p class="text-sm text-gray-600">${job.department} • ${job.employment_type}</p>
+                                                <p class="text-sm text-gray-500 mt-1">${job.job_description}</p>
+                                                <div class="flex items-center space-x-4 mt-2 text-xs text-gray-500">
+                                                    <span>Posted: ${job.created_date}</span>
+                                                    <span>Applications: ${job.application_count}</span>
+                                                    ${job.application_deadline ? `<span>Deadline: ${job.application_deadline}</span>` : ''}
+                                                </div>
+                                            </div>
+                                            <span class="px-2 py-1 rounded text-xs ${job.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}">
+                                                ${job.status}
+                                            </span>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        `;
+                    } else {
+                        container.innerHTML = '<p class="text-gray-500">No job postings found</p>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading job postings:', error);
+                    document.getElementById('job-postings-list').innerHTML = '<p class="text-red-500">Error loading job postings</p>';
+                });
+        }
+
+        function loadJobApplications() {
+            fetch('/api/hr/job-applications')
+                .then(response => response.json())
+                .then(data => {
+                    const container = document.getElementById('job-applications');
+                    if (data.applications && data.applications.length > 0) {
+                        container.innerHTML = `
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full divide-y divide-gray-200">
+                                    <thead class="bg-gray-50">
+                                        <tr>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Applicant</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Position</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Applied</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="bg-white divide-y divide-gray-200">
+                                        ${data.applications.map(app => `
+                                            <tr>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                                    ${app.first_name ? `${app.first_name} ${app.last_name}` : app.applicant_name}
+                                                </td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${app.job_title}</td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${app.application_date}</td>
+                                                <td class="px-6 py-4 whitespace-nowrap">
+                                                    <span class="px-2 py-1 rounded text-xs ${app.status === 'Applied' ? 'bg-blue-100 text-blue-800' :
+                                app.status === 'Under Review' ? 'bg-yellow-100 text-yellow-800' :
+                                    app.status === 'Accepted' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                                        ${app.status}
+                                                    </span>
+                                                </td>
+                                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                                    <form method="POST" action="/hr/update-application-status" class="inline">
+                                                        <input type="hidden" name="application_id" value="${app.application_id}">
+                                                        <select name="status" class="text-xs border rounded px-1 py-1 mr-2">
+                                                            <option value="Under Review">Under Review</option>
+                                                            <option value="Interview">Interview</option>
+                                                            <option value="Accepted">Accepted</option>
+                                                            <option value="Rejected">Rejected</option>
+                                                        </select>
+                                                        <button type="submit" class="text-blue-600 hover:text-blue-900">Update</button>
+                                                    </form>
+                                                </td>
+                                            </tr>
+                                        `).join('')}
+                                    </tbody>
+                                </table>
+                            </div>
+                        `;
+                    } else {
+                        container.innerHTML = '<p class="text-gray-500">No job applications found</p>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading job applications:', error);
+                    document.getElementById('job-applications').innerHTML = '<p class="text-red-500">Error loading job applications</p>';
+                });
+        }
+
+        // Load dashboard on page load
+        document.addEventListener('DOMContentLoaded', function () {
+            loadDashboardStats();
+        });
+    </script>
 </body>
+
 </html>

@@ -1,63 +1,133 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
-  <title>Access Portal</title>
+  <title>NexIQoN Portal - Login</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 </head>
-<body class="bg-gray-900 text-white min-h-screen flex flex-col">
+
+<body class="bg-gradient-to-br from-gray-900 via-purple-900 to-black text-white min-h-screen flex flex-col">
 
   <!-- 🔷 Top Navbar -->
-  <header class="bg-white shadow-md py-4 px-6 flex items-center justify-between">
-    <h1 class="text-2xl font-bold text-blue-600">NexIQon</h1>
+  <header class="bg-black bg-opacity-50 backdrop-blur-sm shadow-lg py-4 px-6 flex items-center justify-between">
+    <div class="flex items-center space-x-3">
+      <div class="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center">
+        <span class="text-white font-bold text-xl">N</span>
+      </div>
+      <h1 class="text-2xl font-bold text-white">NexIQoN</h1>
+    </div>
     <div class="space-x-4">
-      <a href="#" onclick="confirmLogout()" class="text-sm text-red-500 hover:text-red-700">Logout</a>
-
-<script>
-  function confirmLogout() {
-    const confirmed = confirm("Are you sure you want to exit?");
-    if (confirmed) {
-      // Redirect to home or login page
-      window.location.href = "/";
-    } else {
-      // Stay on the same page
-      return;
-    }
-  }
-</script>
-
+      <a href="/" class="text-sm text-gray-300 hover:text-white transition">← Back to Home</a>
     </div>
   </header>
 
   <!-- 🔸 Main Content -->
-  <main class="flex-1 p-10 flex flex-col items-center justify-center space-y-8">
-    <div class="max-w-4xl w-full">
-      <h2 class="text-3xl font-bold text-white mb-2">Welcome to NexIQon Portal 👋</h2>
-      <p class="text-gray-300 mb-8">
-        At NexIQon, we blend innovation with intelligence to deliver IT solutions that transform businesses.
-        Our employees are our strength — empowered, skilled, and passionate about building the future. Explore your tools below.
-      </p>
-
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <!-- HR Portal Box -->
-        <div class="bg-gray-800 p-6 rounded-lg shadow-md">
-          <h3 class="text-xl font-semibold mb-2 text-white">🔐 HR Access Portal</h3>
-          <p class="text-gray-300 mb-4">Manage onboarding, induction, employee records, and HR reports.</p>
-          <a href="{{ url_for('hr_login') }}" class="text-blue-400 underline">Go to HR Portal</a>
-
+  <main class="flex-1 flex items-center justify-center p-10 relative z-10">
+    <div class="max-w-md w-full">
+      <!-- Login Card -->
+      <div
+        class="bg-black bg-opacity-60 backdrop-blur-sm p-8 rounded-2xl shadow-2xl border border-gray-700 relative z-20">
+        <div class="text-center mb-8">
+          <h2 class="text-3xl font-bold text-white mb-2">Welcome Back</h2>
+          <p class="text-gray-300">
+            Sign in to access your NexIQoN portal
+          </p>
         </div>
 
-        <!-- Employee Portal Box -->
-        <div class="bg-gray-800 p-6 rounded-lg shadow-md">
-          <h3 class="text-xl font-semibold mb-2 text-white">👥 Employee Access Portal</h3>
-          <p class="text-gray-300 mb-4">Submit timesheets, leave forms, and track your activities with ease.</p>
-          <a href="/employee-login" class="text-blue-400 underline">Go to Employee Portal</a>
+        <!-- Login Form -->
+        <form method="POST" action="/signin" class="space-y-6">
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-2">Email Address</label>
+            <input type="email" name="email" required placeholder="Enter your email"
+              class="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition">
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-300 mb-2">Password</label>
+            <input type="password" name="password" required placeholder="Enter your password"
+              class="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition">
+          </div>
+
+          <div class="flex items-center justify-between">
+            <label class="flex items-center">
+              <input type="checkbox"
+                class="w-4 h-4 text-purple-600 bg-gray-800 border-gray-600 rounded focus:ring-purple-500">
+              <span class="ml-2 text-sm text-gray-300">Remember me</span>
+            </label>
+            <a href="/forgot-password" class="text-sm text-purple-400 hover:text-purple-300 transition">
+              Forgot password?
+            </a>
+          </div>
+
+          <button type="submit"
+            class="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-purple-500">
+            Sign In
+          </button>
+        </form>
+
+        <!-- Alternative Login Options -->
+        <div class="mt-8">
+          <div class="relative">
+            <div class="absolute inset-0 flex items-center">
+              <div class="w-full border-t border-gray-600"></div>
+            </div>
+            <div class="relative flex justify-center text-sm">
+              <span class="px-2 bg-black text-gray-400">Or continue with</span>
+            </div>
+          </div>
+
+          <div class="mt-6 grid grid-cols-2 gap-3">
+            <a href="/login/google"
+              class="w-full inline-flex justify-center py-2 px-4 border border-gray-600 rounded-lg bg-gray-800 text-sm font-medium text-gray-300 hover:bg-gray-700 transition">
+              <svg class="w-5 h-5" viewBox="0 0 24 24">
+                <path fill="currentColor"
+                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                <path fill="currentColor"
+                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                <path fill="currentColor"
+                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                <path fill="currentColor"
+                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+              </svg>
+              <span class="ml-2">Google</span>
+            </a>
+
+            <a href="/login/microsoft"
+              class="w-full inline-flex justify-center py-2 px-4 border border-gray-600 rounded-lg bg-gray-800 text-sm font-medium text-gray-300 hover:bg-gray-700 transition">
+              <svg class="w-5 h-5" viewBox="0 0 24 24">
+                <path fill="currentColor"
+                  d="M11.4 24H0V12.6h11.4V24zM24 24H12.6V12.6H24V24zM11.4 11.4H0V0h11.4v11.4zM24 11.4H12.6V0H24v11.4z" />
+              </svg>
+              <span class="ml-2">Microsoft</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Career Portal Access -->
+        <div class="mt-8 pt-6 border-t border-gray-600">
+          <p class="text-center text-sm text-gray-400 mb-3">
+            Looking for career opportunities?
+          </p>
+          <a href="/career-portal"
+            class="w-full inline-flex justify-center py-2 px-4 border border-purple-600 rounded-lg text-purple-400 hover:bg-purple-600 hover:text-white transition">
+            Access Career Portal
+          </a>
         </div>
       </div>
     </div>
   </main>
 
- 
+  <!-- Background Animation -->
+  <div class="fixed inset-0 -z-10 overflow-hidden">
+    <div
+      class="absolute -top-40 -right-32 w-80 h-80 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse -z-20">
+    </div>
+    <div
+      class="absolute -bottom-40 -left-32 w-80 h-80 bg-blue-500 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse -z-20">
+    </div>
+  </div>
 
 </body>
+
 </html>

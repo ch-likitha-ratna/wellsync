@@ -1,0 +1,20 @@
+[build]
+  publish = "."
+  command = "echo 'No build command needed for Flask app'"
+
+[build.environment]
+  PYTHON_VERSION = "3.9"
+
+[[redirects]]
+  from = "/*"
+  to = "/app.py"
+  status = 200
+
+[functions]
+  directory = "."
+  included_files = ["app.py", "templates/**", "static/**"]
+
+[dev]
+  command = "python app.py"
+  port = 5000
+  publish = "."

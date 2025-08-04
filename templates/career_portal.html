@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Career Portal - NexIQoN</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+
+<body class="bg-gray-50">
+  <!-- Header -->
+  <header class="bg-blue-600 text-white p-4 shadow-lg">
+    <div class="container mx-auto flex justify-between items-center">
+      <h1 class="text-2xl font-bold">
+        <i class="fas fa-graduation-cap mr-2"></i>Career Portal
+      </h1>
+      <div class="flex items-center space-x-4">
+        <span>Welcome, {{ user_name }}</span>
+        <a href="/logout" class="bg-red-500 hover:bg-red-600 px-4 py-2 rounded transition">
+          <i class="fas fa-sign-out-alt mr-1"></i>Logout
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <div class="container mx-auto p-6">
+    <!-- Navigation Tabs -->
+    <div class="bg-white rounded-lg shadow-md mb-6">
+      <div class="border-b border-gray-200">
+        <nav class="flex space-x-8 px-6">
+          <button onclick="showTab('courses')" id="courses-tab"
+            class="tab-button py-4 px-2 border-b-2 border-blue-500 text-blue-600 font-medium">
+            <i class="fas fa-book mr-2"></i>Courses
+          </button>
+          <button onclick="showTab('badges')" id="badges-tab"
+            class="tab-button py-4 px-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700">
+            <i class="fas fa-medal mr-2"></i>My Badges
+          </button>
+          <button onclick="showTab('attempts')" id="attempts-tab"
+            class="tab-button py-4 px-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700">
+            <i class="fas fa-history mr-2"></i>My Attempts
+          </button>
+        </nav>
+      </div>
+    </div>
+
+    <!-- Courses Tab -->
+    <div id="courses-content" class="tab-content">
+      <!-- Search and Filter -->
+      <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+        <div class="flex flex-col md:flex-row gap-4">
+          <div class="flex-1">
+            <input type="text" id="course-search" placeholder="Search courses..."
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+          </div>
+          <div class="md:w-64">
+            <select id="category-filter"
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+              <option value="">All Categories</option>
+            </select>
+          </div>
+          <button onclick="searchCourses()"
+            class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition">
+            <i class="fas fa-search mr-2"></i>Search
+          </button>
+        </div>
+      </div>
+
+      <!-- Courses Grid -->
+      <div id="courses-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Courses will be loaded here -->
+      </div>
+    </div>
+
+    <!-- Badges Tab -->
+    <div id="badges-content" class="tab-content hidden">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Earned Badges -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <h3 class="text-xl font-bold text-green-600 mb-4">
+            <i class="fas fa-trophy mr-2"></i>Earned Badges
+          </h3>
+          <div id="earned-badges" class="space-y-3">
+            <!-- Earned badges will be loaded here -->
+          </div>
+        </div>
+
+        <!-- Available Badges -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+          <h3 class="text-xl font-bold text-blue-600 mb-4">
+            <i class="fas fa-target mr-2"></i>Available Badges
+          </h3>
+          <div id="available-badges" class="space-y-3">
+            <!-- Available badges will be loaded here -->
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Attempts Tab -->
+    <div id="attempts-content" class="tab-content hidden">
+      <div class="bg-white rounded-lg shadow-md p-6">
+        <h3 class="text-xl font-bold mb-4">
+          <i class="fas fa-history mr-2"></i>My Course Attempts
+        </h3>
+        <div id="attempts-list">
+          <!-- Attempts will be loaded here -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Course Detail Modal -->
+  <div id="course-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+      <div class="bg-white rounded-lg max-w-2xl w-full max-h-screen overflow-y-auto">
+        <div class="p-6">
+          <div class="flex justify-between items-center mb-4">
+            <h2 id="course-modal-title" class="text-2xl font-bold"></h2>
+            <button onclick="closeCourseModal()" class="text-gray-500 hover:text-gray-700">
+              <i class="fas fa-times text-xl"></i>
+            </button>
+          </div>
+          <div id="course-modal-content">
+            <!-- Course details will be loaded here -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Exam Modal -->
+  <div id="exam-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50">
+    <div class="flex items-center justify-center min-h-screen p-4">
+      <div class="bg-white rounded-lg max-w-4xl w-full max-h-screen overflow-y-auto">
+        <div class="p-6">
+          <div class="flex justify-between items-center mb-4">
+            <h2 id="exam-modal-title" class="text-2xl font-bold"></h2>
+            <div class="flex items-center space-x-4">
+              <span id="exam-timer" class="text-lg font-mono bg-red-100 text-red-800 px-3 py-1 rounded"></span>
+              <button onclick="closeExamModal()" class="text-gray-500 hover:text-gray-700">
+                <i class="fas fa-times text-xl"></i>
+              </button>
+            </div>
+          </div>
+          <div id="exam-content">
+            <!-- Exam questions will be loaded here -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PART 2 JAVASCRIPT WILL GO HERE -->
+
+</body>
+
+</html>
+
+<script>
+  let currentCourseId = null;
+  let examQuestions = [];
+  let examTimer = null;
+  let timeLeft = 1800; // 30 minutes
+
+  // Tab Management
+  function showTab(tabName) {
+    document.querySelectorAll('.tab-content').forEach(content => {
+      content.classList.add('hidden');
+    });
+
+    document.querySelectorAll('.tab-button').forEach(button => {
+      button.classList.remove('border-blue-500', 'text-blue-600');
+      button.classList.add('border-transparent', 'text-gray-500');
+    });
+
+    document.getElementById(tabName + '-content').classList.remove('hidden');
+
+    const activeTab = document.getElementById(tabName + '-tab');
+    activeTab.classList.remove('border-transparent', 'text-gray-500');
+    activeTab.classList.add('border-blue-500', 'text-blue-600');
+
+    if (tabName === 'courses') loadCourses();
+    else if (tabName === 'badges') loadBadges();
+    else if (tabName === 'attempts') loadAttempts();
+  }
+
+  // Load Courses
+  async function loadCourses() {
+    try {
+      const response = await fetch('/api/career/courses');
+      const data = await response.json();
+
+      if (data.error) throw new Error(data.error);
+
+      // Populate categories
+      const categoryFilter = document.getElementById('category-filter');
+      categoryFilter.innerHTML = '<option value="">All Categories</option>';
+      data.categories.forEach(category => {
+        categoryFilter.innerHTML += `<option value="${category}">${category}</option>`;
+      });
+
+      displayCourses(data.courses);
+    } catch (error) {
+      console.error('Error loading courses:', error);
+      document.getElementById('courses-grid').innerHTML =
+        '<div class="col-span-full text-center text-red-600">Error loading courses</div>';
+    }
+  }
+
+  function displayCourses(courses) {
+    const grid = document.getElementById('courses-grid');
+
+    if (courses.length === 0) {
+      grid.innerHTML = '<div class="col-span-full text-center text-gray-500">No courses found</div>';
+      return;
+    }
+
+    grid.innerHTML = courses.map(course => `
+          <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition">
+              <div class="flex items-start justify-between mb-3">
+                  <h3 class="text-lg font-bold text-gray-800">${course.course_name}</h3>
+                  <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">${course.skill_category}</span>
+              </div>
+              
+              <p class="text-gray-600 text-sm mb-4">${course.description || 'No description available'}</p>
+              
+              <div class="flex items-center justify-between text-sm text-gray-500 mb-4">
+                  <span><i class="fas fa-clock mr-1"></i>${course.duration_hours}h</span>
+                  <span><i class="fas fa-trophy mr-1"></i>${course.badge_name || 'No badge'}</span>
+                  <span class="text-${course.difficulty_level === 'Beginner' ? 'green' : course.difficulty_level === 'Intermediate' ? 'yellow' : 'red'}-600">
+                      ${course.difficulty_level}
+                  </span>
+              </div>
+              
+              ${course.total_attempts > 0 ? `
+                  <div class="mb-4 p-3 bg-gray-50 rounded">
+                      <div class="text-sm">
+                          <span class="text-gray-600">Attempts: ${course.total_attempts}</span>
+                          ${course.best_score ? `<span class="ml-4 text-blue-600">Best: ${course.best_score}%</span>` : ''}
+                          ${course.has_passed ? '<span class="ml-4 text-green-600"><i class="fas fa-check"></i> Passed</span>' : ''}
+                      </div>
+                  </div>
+              ` : ''}
+              
+              <button onclick="viewCourse(${course.course_id})" 
+                      class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded transition">
+                  <i class="fas fa-eye mr-2"></i>View Course
+              </button>
+          </div>
+      `).join('');
+  }
+
+  // Search Courses
+  async function searchCourses() {
+    const search = document.getElementById('course-search').value;
+    const category = document.getElementById('category-filter').value;
+
+    try {
+      const params = new URLSearchParams();
+      if (search) params.append('search', search);
+      if (category) params.append('category', category);
+
+      const response = await fetch(`/api/career/courses?${params}`);
+      const data = await response.json();
+
+      if (data.error) throw new Error(data.error);
+      displayCourses(data.courses);
+    } catch (error) {
+      console.error('Error searching courses:', error);
+    }
+  }
+
+  // View Course Details
+  async function viewCourse(courseId) {
+    currentCourseId = courseId;
+
+    try {
+      const response = await fetch(`/api/career/course/${courseId}`);
+      const data = await response.json();
+
+      if (data.error) throw new Error(data.error);
+
+      document.getElementById('course-modal-title').textContent = data.course.course_name;
+      document.getElementById('course-modal-content').innerHTML = `
+              <div class="space-y-4">
+                  <div>
+                      <h4 class="font-bold text-gray-800">Description</h4>
+                      <p class="text-gray-600">${data.course.description || 'No description available'}</p>
+                  </div>
+                  
+                  <div class="grid grid-cols-2 gap-4">
+                      <div><h4 class="font-bold text-gray-800">Category</h4><p class="text-gray-600">${data.course.skill_category}</p></div>
+                      <div><h4 class="font-bold text-gray-800">Difficulty</h4><p class="text-gray-600">${data.course.difficulty_level}</p></div>
+                      <div><h4 class="font-bold text-gray-800">Duration</h4><p class="text-gray-600">${data.course.duration_hours} hours</p></div>
+                      <div><h4 class="font-bold text-gray-800">Passing Score</h4><p class="text-gray-600">${data.course.passing_score}%</p></div>
+                  </div>
+                  
+                  ${data.course.badge_name ? `
+                      <div>
+                          <h4 class="font-bold text-gray-800">Badge Reward</h4>
+                          <div class="flex items-center space-x-2">
+                              <i class="fas fa-medal text-yellow-500"></i>
+                              <span class="text-gray-600">${data.course.badge_name}</span>
+                              ${data.has_badge ? '<span class="text-green-600 text-sm">✓ Already Earned</span>' : ''}
+                          </div>
+                      </div>
+                  ` : ''}
+                  
+                  ${data.attempts.length > 0 ? `
+                      <div>
+                          <h4 class="font-bold text-gray-800">Your Previous Attempts</h4>
+                          <div class="space-y-2">
+                              ${data.attempts.slice(0, 3).map(attempt => `
+                                  <div class="flex justify-between items-center p-2 bg-gray-50 rounded">
+                                      <span class="text-sm text-gray-600">${attempt.attempt_date}</span>
+                                      <span class="text-sm font-medium ${attempt.passed ? 'text-green-600' : 'text-red-600'}">
+                                          ${attempt.score}% ${attempt.passed ? '(Passed)' : '(Failed)'}
+                                      </span>
+                                  </div>
+                              `).join('')}
+                          </div>
+                      </div>
+                  ` : ''}
+                  
+                  <div class="flex space-x-4 pt-4">
+                      <button onclick="startExam(${courseId})" 
+                              class="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded transition">
+                          <i class="fas fa-play mr-2"></i>Take Exam (20 Questions)
+                      </button>
+                      <button onclick="closeCourseModal()" 
+                              class="flex-1 bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded transition">
+                          Close
+                      </button>
+                  </div>
+              </div>
+          `;
+
+      document.getElementById('course-modal').classList.remove('hidden');
+    } catch (error) {
+      console.error('Error loading course details:', error);
+      alert('Error loading course details');
+    }
+  }
+
+  // Start Exam
+  async function startExam(courseId) {
+    try {
+      const response = await fetch(`/api/career/course/${courseId}/start-exam`);
+      const data = await response.json();
+
+      if (data.error) throw new Error(data.error);
+
+      examQuestions = data.questions;
+      timeLeft = 1800; // 30 minutes
+
+      document.getElementById('exam-modal-title').textContent = `${data.course_name} - Exam`;
+
+      let questionsHtml = `
+              <div class="mb-4 p-4 bg-blue-50 rounded">
+                  <p class="text-blue-800">
+                      <i class="fas fa-info-circle mr-2"></i>
+                      You have 30 minutes to complete ${data.total_questions} questions. 
+                      You need ${data.passing_score}% to pass.
+                  </p>
+              </div>
+              <form id="exam-form">
+          `;
+
+      examQuestions.forEach((question, index) => {
+        questionsHtml += `
+                  <div class="mb-6 p-4 border border-gray-200 rounded">
+                      <h4 class="font-bold mb-3">Question ${index + 1}</h4>
+                      <p class="mb-4">${question.question_text}</p>
+                      <div class="space-y-2">
+                          <label class="flex items-center">
+                              <input type="radio" name="q${question.question_id}" value="A" class="mr-2">
+                              <span>A) ${question.option_a}</span>
+                          </label>
+                          <label class="flex items-center">
+                              <input type="radio" name="q${question.question_id}" value="B" class="mr-2">
+                              <span>B) ${question.option_b}</span>
+                          </label>
+                          <label class="flex items-center">
+                              <input type="radio" name="q${question.question_id}" value="C" class="mr-2">
+                              <span>C) ${question.option_c}</span>
+                          </label>
+                          <label class="flex items-center">
+                              <input type="radio" name="q${question.question_id}" value="D" class="mr-2">
+                              <span>D) ${question.option_d}</span>
+                          </label>
+                      </div>
+                  </div>
+              `;
+      });
+
+      questionsHtml += `
+              </form>
+              <div class="flex justify-between pt-4">
+                  <button onclick="closeExamModal()" 
+                          class="bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded transition">
+                      Cancel
+                  </button>
+                  <button onclick="submitExam()" 
+                          class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded transition">
+                      <i class="fas fa-check mr-2"></i>Submit Exam
+                  </button>
+              </div>
+          `;
+
+      document.getElementById('exam-content').innerHTML = questionsHtml;
+      document.getElementById('course-modal').classList.add('hidden');
+      document.getElementById('exam-modal').classList.remove('hidden');
+
+      startTimer();
+    } catch (error) {
+      console.error('Error starting exam:', error);
+      alert('Error starting exam');
+    }
+  }
+
+  // Timer Functions
+  function startTimer() {
+    examTimer = setInterval(() => {
+      timeLeft--;
+      updateTimerDisplay();
+
+      if (timeLeft <= 0) {
+        clearInterval(examTimer);
+        alert('Time is up! Submitting exam automatically.');
+        submitExam();
+      }
+    }, 1000);
+  }
+
+  function updateTimerDisplay() {
+    const minutes = Math.floor(timeLeft / 60);
+    const seconds = timeLeft % 60;
+    document.getElementById('exam-timer').textContent =
+      `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  }
+
+  // Submit Exam
+  async function submitExam() {
+    if (examTimer) {
+      clearInterval(examTimer);
+    }
+
+    // Collect answers
+    const formData = new FormData(document.getElementById('exam-form'));
+    const answers = {};
+
+    examQuestions.forEach(question => {
+      const answer = formData.get(`q${question.question_id}`);
+      if (answer) {
+        answers[question.question_id] = answer;
+      }
+    });
+
+    // Check if all questions are answered
+    if (Object.keys(answers).length < examQuestions.length) {
+      if (!confirm('You have not answered all questions. Submit anyway?')) {
+        startTimer(); // Restart timer
+        return;
+      }
+    }
+
+    try {
+      const response = await fetch(`/api/career/course/${currentCourseId}/submit-exam`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ answers })
+      });
+
+      const result = await response.json();
+
+      if (result.error) {
+        throw new Error(result.error);
+      }
+
+      // Show results
+      document.getElementById('exam-content').innerHTML = `
+              <div class="text-center">
+                  <div class="mb-4">
+                      <i class="fas fa-${result.passed ? 'check-circle text-green-500' : 'times-circle text-red-500'} text-6xl"></i>
+                  </div>
+                  <h3 class="text-2xl font-bold mb-2">${result.passed ? 'Congratulations!' : 'Better Luck Next Time'}</h3>
+                  <p class="text-lg mb-4">You scored ${result.score}% (${result.correct_answers}/${result.total_questions})</p>
+                  <p class="text-gray-600 mb-4">Passing score: ${result.passing_score}%</p>
+                  
+                  ${result.badge_awarded ? `
+                      <div class="bg-yellow-50 border border-yellow-200 rounded p-4 mb-4">
+                          <i class="fas fa-medal text-yellow-500 text-2xl mb-2"></i>
+                          <p class="text-yellow-800 font-bold">Badge Earned!</p>
+                          <p class="text-yellow-700">You have earned a new badge for completing this course!</p>
+                      </div>
+                  ` : ''}
+                  
+                  <button onclick="closeExamModal(); loadCourses(); loadBadges(); loadAttempts();" 
+                          class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-6 rounded transition">
+                      Continue
+                  </button>
+              </div>
+          `;
+    } catch (error) {
+      console.error('Error submitting exam:', error);
+      alert('Error submitting exam');
+    }
+  }
+
+  // Load Badges
+  async function loadBadges() {
+    try {
+      const response = await fetch('/api/career/badges');
+      const data = await response.json();
+
+      if (data.error) throw new Error(data.error);
+
+      // Display earned badges
+      const earnedContainer = document.getElementById('earned-badges');
+      if (data.earned_badges.length === 0) {
+        earnedContainer.innerHTML = '<p class="text-gray-500">No badges earned yet</p>';
+      } else {
+        earnedContainer.innerHTML = data.earned_badges.map(badge => `
+                  <div class="flex items-center space-x-3 p-3 bg-green-50 rounded">
+                      <i class="fas fa-medal text-green-500 text-xl"></i>
+                      <div>
+                          <h4 class="font-bold text-green-800">${badge.badge_name}</h4>
+                          <p class="text-sm text-green-600">${badge.description || ''}</p>
+                          <p class="text-xs text-green-500">Earned: ${new Date(badge.earned_date).toLocaleDateString()}</p>
+                      </div>
+                  </div>
+              `).join('');
+      }
+
+      // Display available badges
+      const availableContainer = document.getElementById('available-badges');
+      if (data.available_badges.length === 0) {
+        availableContainer.innerHTML = '<p class="text-gray-500">All badges earned!</p>';
+      } else {
+        availableContainer.innerHTML = data.available_badges.map(badge => `
+                  <div class="flex items-center space-x-3 p-3 bg-blue-50 rounded">
+                      <i class="fas fa-medal text-blue-500 text-xl"></i>
+                      <div>
+                          <h4 class="font-bold text-blue-800">${badge.badge_name}</h4>
+                          <p class="text-sm text-blue-600">${badge.description || ''}</p>
+                      </div>
+                  </div>
+              `).join('');
+      }
+    } catch (error) {
+      console.error('Error loading badges:', error);
+    }
+  }
+
+  // Load Attempts
+  async function loadAttempts() {
+    try {
+      const response = await fetch('/api/career/my-attempts');
+      const data = await response.json();
+
+      if (data.error) throw new Error(data.error);
+
+      const container = document.getElementById('attempts-list');
+
+      if (data.attempts.length === 0) {
+        container.innerHTML = '<p class="text-gray-500">No attempts yet</p>';
+      } else {
+        container.innerHTML = `
+                  <div class="overflow-x-auto">
+                      <table class="min-w-full divide-y divide-gray-200">
+                          <thead class="bg-gray-50">
+                              <tr>
+                                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Course</th>
+                                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Score</th>
+                                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Result</th>
+                                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                  <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Badge</th>
+                              </tr>
+                          </thead>
+                          <tbody class="bg-white divide-y divide-gray-200">
+                              ${data.attempts.map(attempt => `
+                                  <tr>
+                                      <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${attempt.course_name}</td>
+                                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${attempt.skill_category}</td>
+                                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${attempt.score}%</td>
+                                      <td class="px-6 py-4 whitespace-nowrap">
+                                          <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${attempt.passed ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                              ${attempt.passed ? 'Passed' : 'Failed'}
+                                          </span>
+                                      </td>
+                                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${attempt.attempt_date}</td>
+                                      <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                          ${attempt.badge_name ? `<i class="fas fa-medal text-yellow-500 mr-1"></i>${attempt.badge_name}` : '-'}
+                                      </td>
+                                  </tr>
+                              `).join('')}
+                          </tbody>
+                      </table>
+                  </div>
+              `;
+      }
+    } catch (error) {
+      console.error('Error loading attempts:', error);
+    }
+  }
+
+  // Modal Controls
+  function closeCourseModal() {
+    document.getElementById('course-modal').classList.add('hidden');
+  }
+
+  function closeExamModal() {
+    if (examTimer) {
+      clearInterval(examTimer);
+    }
+    document.getElementById('exam-modal').classList.add('hidden');
+  }
+
+  // Initialize
+  document.addEventListener('DOMContentLoaded', function () {
+    showTab('courses');
+  });
+</script>

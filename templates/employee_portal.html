@@ -1,61 +1,464 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
-    <title>Employee Portal - NexIQon</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Portal - NexIQoN</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
-<body class="bg-gray-900 text-white min-h-screen">
 
-   <!-- Top Bar -->
-<div class="flex justify-between items-center bg-white px-6 py-4 border-b-2 border-gray-300">
-    <h1 class="text-xl font-bold text-blue-600">NexIQon</h1>
-    <a href="/logout" onclick="return confirm('Are you sure you want to logout?')" class="text-red-500 hover:text-red-400 font-semibold">Logout</a>
-</div>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <h1 class="text-xl font-semibold text-gray-900">NexIQoN Employee Portal</h1>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <span class="text-gray-700">{{ user_name }}</span>
+                    <a href="/logout"
+                        class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded text-sm">Logout</a>
+                </div>
+            </div>
+        </div>
+    </nav>
 
-    <!-- Welcome Text -->
-    <div class="text-center my-8">
-        <h2 class="text-3xl font-bold text-blue-300">Welcome to NexIQon Employee Portal 👥</h2>
-        <p class="mt-2 text-gray-300">You are now logged in as an employee.</p>
+    <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        <!-- Tab Navigation -->
+        <div class="mb-6">
+            <nav class="flex space-x-8">
+                <button onclick="showTab('dashboard')"
+                    class="tab-btn active border-b-2 border-blue-500 py-2 px-1 text-blue-600 font-medium">Dashboard</button>
+                <button onclick="showTab('leave')"
+                    class="tab-btn border-b-2 border-transparent py-2 px-1 text-gray-500 hover:text-gray-700">Leave
+                    Request</button>
+                <button onclick="showTab('timesheet')"
+                    class="tab-btn border-b-2 border-transparent py-2 px-1 text-gray-500 hover:text-gray-700">Timesheet</button>
+                <button onclick="showTab('feedback')"
+                    class="tab-btn border-b-2 border-transparent py-2 px-1 text-gray-500 hover:text-gray-700">Feedback</button>
+                <button onclick="showTab('tickets')"
+                    class="tab-btn border-b-2 border-transparent py-2 px-1 text-gray-500 hover:text-gray-700">Tickets</button>
+                <button onclick="showTab('induction')"
+                    class="tab-btn border-b-2 border-transparent py-2 px-1 text-gray-500 hover:text-gray-700">Induction</button>
+                <button onclick="showTab('career')"
+                    class="tab-btn border-b-2 border-transparent py-2 px-1 text-gray-500 hover:text-gray-700">Career
+                    Portal</button>
+            </nav>
+        </div>
+
+        <!-- Dashboard Tab -->
+        <div id="dashboard" class="tab-content">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Employee Photo & Info -->
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <div class="text-center">
+                        <div class="w-32 h-32 mx-auto mb-4 bg-gray-300 rounded-full flex items-center justify-center">
+                            <i class="fas fa-user text-gray-500 text-4xl"></i>
+                        </div>
+                        <h3 class="text-lg font-medium text-gray-900" id="emp-name">{{ user_name }}</h3>
+                        <p class="text-gray-500" id="emp-role">{{ user_role }}</p>
+                        <p class="text-sm text-gray-400" id="emp-email">{{ user_email }}</p>
+                    </div>
+                </div>
+
+                <!-- Personal Information -->
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h4 class="text-lg font-medium text-gray-900 mb-4">Personal Information</h4>
+                    <div class="space-y-2 text-sm">
+                        <div><span class="font-medium">Employee ID:</span> <span id="emp-id">--</span></div>
+                        <div><span class="font-medium">Department:</span> <span id="emp-dept">{{ user_department
+                                }}</span></div>
+                        <div><span class="font-medium">Contact:</span> <span id="emp-contact">--</span></div>
+                        <div><span class="font-medium">Location:</span> <span id="emp-location">--</span></div>
+                        <div><span class="font-medium">Joined:</span> <span id="emp-joined">--</span></div>
+                    </div>
+                </div>
+
+                <!-- Leave Balance -->
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h4 class="text-lg font-medium text-gray-900 mb-4">Leave Balance</h4>
+                    <div class="space-y-3">
+                        <div class="flex justify-between">
+                            <span>Sick Leave</span>
+                            <span class="font-medium" id="sick-leaves">--</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Personal Leave</span>
+                            <span class="font-medium" id="personal-leaves">--</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span>Comp Off</span>
+                            <span class="font-medium" id="comp-off">--</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Organization Hierarchy -->
+            <div class="mt-6 bg-white p-6 rounded-lg shadow">
+                <h4 class="text-lg font-medium text-gray-900 mb-4">Organization Hierarchy</h4>
+                <div id="org-hierarchy" class="text-sm text-gray-600">Loading...</div>
+            </div>
+        </div>
+
+        <!-- Leave Request Tab -->
+        <div id="leave" class="tab-content hidden">
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Submit Leave Request</h3>
+                <form method="POST" action="/submit-leave" class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Leave Type</label>
+                            <select name="leave_type" onchange="toggleSubType()"
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                                <option value="Paid">Paid</option>
+                                <option value="Unpaid">Unpaid</option>
+                            </select>
+                        </div>
+                        <div id="sub-type-div">
+                            <label class="block text-sm font-medium text-gray-700">Sub Type</label>
+                            <select name="sub_type" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                                <option value="Sick">Sick</option>
+                                <option value="Personal">Personal</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Start Date</label>
+                            <input type="date" name="start_date" required
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">End Date</label>
+                            <input type="date" name="end_date" required
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Reason</label>
+                        <textarea name="reason" rows="3"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"></textarea>
+                    </div>
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">Submit
+                        Request</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Timesheet Tab -->
+        <div id="timesheet" class="tab-content hidden">
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Weekly Timesheet</h3>
+                <form method="POST" action="/employee/submit-timesheet" class="space-y-4">
+                    <div class="grid grid-cols-7 gap-2 mb-4">
+                        <div class="text-center font-medium text-gray-700">Mon</div>
+                        <div class="text-center font-medium text-gray-700">Tue</div>
+                        <div class="text-center font-medium text-gray-700">Wed</div>
+                        <div class="text-center font-medium text-gray-700">Thu</div>
+                        <div class="text-center font-medium text-gray-700">Fri</div>
+                        <div class="text-center font-medium text-gray-700">Sat</div>
+                        <div class="text-center font-medium text-gray-700">Sun</div>
+
+                        <input type="number" name="hours_mon" placeholder="Hours" min="0" max="24" step="0.5"
+                            class="p-2 border rounded text-center">
+                        <input type="number" name="hours_tue" placeholder="Hours" min="0" max="24" step="0.5"
+                            class="p-2 border rounded text-center">
+                        <input type="number" name="hours_wed" placeholder="Hours" min="0" max="24" step="0.5"
+                            class="p-2 border rounded text-center">
+                        <input type="number" name="hours_thu" placeholder="Hours" min="0" max="24" step="0.5"
+                            class="p-2 border rounded text-center">
+                        <input type="number" name="hours_fri" placeholder="Hours" min="0" max="24" step="0.5"
+                            class="p-2 border rounded text-center">
+                        <input type="number" name="hours_sat" placeholder="Hours" min="0" max="24" step="0.5"
+                            class="p-2 border rounded text-center">
+                        <input type="number" name="hours_sun" placeholder="Hours" min="0" max="24" step="0.5"
+                            class="p-2 border rounded text-center">
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Week Starting</label>
+                            <input type="date" name="week_start" required
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Project</label>
+                            <select name="project_id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                                <option value="">Select Project</option>
+                                <!-- Projects loaded via JS -->
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Work Description</label>
+                        <textarea name="work_description" rows="3"
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                            placeholder="Describe your work for the week"></textarea>
+                    </div>
+
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
+                        Submit Timesheet
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Feedback Tab -->
+        <div id="feedback" class="tab-content hidden">
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Anonymous Feedback</h3>
+                <form method="POST" action="/employee/submit-feedback" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Feedback Type</label>
+                        <select name="feedback_type" required
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                            <option value="">Select Type</option>
+                            <option value="General">General Feedback</option>
+                            <option value="Manager">Manager Feedback</option>
+                            <option value="HR">HR Feedback</option>
+                            <option value="Process">Process Improvement</option>
+                            <option value="Workplace">Workplace Environment</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Target Role (Optional)</label>
+                        <select name="target_role" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                            <option value="">Select Target Role</option>
+                            <option value="Manager">Manager</option>
+                            <option value="HR">HR</option>
+                            <option value="CEO">CEO</option>
+                            <option value="IT">IT</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">Feedback</label>
+                        <textarea name="feedback_text" rows="6" required
+                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                            placeholder="Your feedback will be submitted anonymously"></textarea>
+                    </div>
+
+                    <div class="bg-yellow-50 border border-yellow-200 rounded p-3">
+                        <p class="text-sm text-yellow-800">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            This feedback is completely anonymous. Your identity will not be revealed.
+                        </p>
+                    </div>
+
+                    <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">
+                        Submit Anonymous Feedback
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Tickets Tab -->
+        <div id="tickets" class="tab-content hidden">
+            <div class="space-y-6">
+                <!-- Submit Ticket Form -->
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">Submit Support Ticket</h3>
+                    <form method="POST" action="/employee/submit-ticket" class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Department</label>
+                                <select name="department" required
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                                    <option value="">Select Department</option>
+                                    <option value="IT">IT Support</option>
+                                    <option value="HR">HR</option>
+                                    <option value="Manager">Manager</option>
+                                    <option value="Finance">Finance</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Priority</label>
+                                <select name="severity" required
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm">
+                                    <option value="">Select Priority</option>
+                                    <option value="Low">Low</option>
+                                    <option value="Medium">Medium</option>
+                                    <option value="High">High</option>
+                                    <option value="Critical">Critical</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Subject</label>
+                            <input type="text" name="subject" required
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                placeholder="Brief description of the issue">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Description</label>
+                            <textarea name="description" rows="4" required
+                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm"
+                                placeholder="Detailed description of the issue"></textarea>
+                        </div>
+
+                        <div class="flex items-center">
+                            <input type="checkbox" name="women_safety" value="1" class="mr-2">
+                            <label class="text-sm text-gray-700">This is a women safety related issue</label>
+                        </div>
+
+                        <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
+                            Submit Ticket
+                        </button>
+                    </form>
+                </div>
+
+                <!-- My Tickets -->
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <h3 class="text-lg font-medium text-gray-900 mb-4">My Tickets</h3>
+                    <div id="my-tickets" class="space-y-3">
+                        <!-- Tickets loaded via JS -->
+                        <p class="text-gray-500">Loading your tickets...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Induction Tab -->
+        <div id="induction" class="tab-content hidden">
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Induction Materials</h3>
+                <div id="induction-content" class="space-y-4">
+                    <!-- Induction content loaded via JS -->
+                    <p class="text-gray-500">Loading induction materials...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Career Tab -->
+        <div id="career" class="tab-content hidden">
+            <div class="bg-white p-6 rounded-lg shadow">
+                <h3 class="text-lg font-medium text-gray-900 mb-4">Career Portal</h3>
+                <p class="text-gray-600 mb-4">Access the full Career Portal for courses, certifications, and badges.</p>
+                <a href="/career-portal"
+                    class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded inline-block">
+                    <i class="fas fa-graduation-cap mr-2"></i>Go to Career Portal
+                </a>
+            </div>
+        </div>
     </div>
 
-    <!-- Quick Access Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto px-4">
-        
-        <a href="{{ url_for('employee_announcements') }}" class="bg-gray-800 hover:bg-gray-700 transition p-6 rounded-lg shadow text-white text-lg flex items-center space-x-2">
-            <span>📢</span>
-            <span>View Announcements</span>
-        </a>
-
-         <a href="{{ url_for('submit_feedback') }}" class="bg-gray-800 p-6 rounded shadow text-white text-lg hover:bg-gray-700 flex items-center">
-    📝 Submit Feedback
-  </a>
-
-         <a href="#" class="bg-gray-800 hover:bg-gray-700 transition p-6 rounded-lg shadow text-white text-lg flex items-center space-x-2">
-            <span>🕒</span>
-            <span>Timesheet</span>
-        </a>
-
-        <a href="{{ url_for('submit_leave_request') }}" class="bg-gray-800 hover:bg-gray-700 transition p-6 rounded-lg shadow text-white text-lg flex items-center space-x-2">
-            <span>🏖️</span>
-            <span>Leave Requests</span>
-        </a>
-
-        <a href="{{ url_for('induction_kit') }}" class="bg-gray-800 hover:bg-gray-700 transition p-6 rounded-lg shadow text-white text-lg flex items-center space-x-2">
-            <span>📦</span>
-            <span>Induction Kit</span>
-        </a>
-
-
-    </div>
-
-    <!-- Logout confirmation script -->
     <script>
-        function confirmLogout() {
-            return confirm("Are you sure you want to logout?");
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active', 'border-blue-500', 'text-blue-600');
+                btn.classList.add('border-transparent', 'text-gray-500');
+            });
+
+            // Show selected tab
+            document.getElementById(tabName).classList.remove('hidden');
+            event.target.classList.add('active', 'border-blue-500', 'text-blue-600');
+            event.target.classList.remove('border-transparent', 'text-gray-500');
+
+            // Load tab-specific data
+            if (tabName === 'tickets') loadMyTickets();
+            else if (tabName === 'induction') loadInductionContent();
+        }
+
+        function toggleSubType() {
+            const leaveType = document.querySelector('select[name="leave_type"]').value;
+            const subTypeDiv = document.getElementById('sub-type-div');
+            subTypeDiv.style.display = leaveType === 'Paid' ? 'block' : 'none';
+        }
+
+        function loadMyTickets() {
+            fetch('/api/employee/my-tickets')
+                .then(response => response.json())
+                .then(data => {
+                    const ticketsDiv = document.getElementById('my-tickets');
+                    if (data.tickets && data.tickets.length > 0) {
+                        ticketsDiv.innerHTML = data.tickets.map(ticket => `
+                            <div class="border rounded p-4">
+                                <div class="flex justify-between items-start">
+                                    <div>
+                                        <h4 class="font-medium">${ticket.subject}</h4>
+                                        <p class="text-sm text-gray-600">${ticket.description}</p>
+                                        <p class="text-xs text-gray-500 mt-1">
+                                            ${ticket.department} • ${ticket.severity} • ${ticket.created_date}
+                                        </p>
+                                    </div>
+                                    <span class="px-2 py-1 rounded text-xs ${ticket.status === 'Open' ? 'bg-red-100 text-red-800' :
+                                ticket.status === 'In Progress' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800'}">
+                                        ${ticket.status}
+                                    </span>
+                                </div>
+                            </div>
+                        `).join('');
+                    } else {
+                        ticketsDiv.innerHTML = '<p class="text-gray-500">No tickets found</p>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading tickets:', error);
+                    document.getElementById('my-tickets').innerHTML = '<p class="text-red-500">Error loading tickets</p>';
+                });
+        }
+
+        function loadInductionContent() {
+            fetch('/api/employee/induction')
+                .then(response => response.json())
+                .then(data => {
+                    const contentDiv = document.getElementById('induction-content');
+                    if (data.content && data.content.length > 0) {
+                        contentDiv.innerHTML = data.content.map(item => `
+                            <div class="border rounded p-4">
+                                <h4 class="font-medium mb-2">${item.title}</h4>
+                                <p class="text-gray-600 mb-3">${item.description}</p>
+                                ${item.file_path ? `
+                                    <a href="${item.file_path}" target="_blank" 
+                                       class="text-blue-600 hover:text-blue-800 text-sm">
+                                        <i class="fas fa-download mr-1"></i>Download Document
+                                    </a>
+                                ` : ''}
+                            </div>
+                        `).join('');
+                    } else {
+                        contentDiv.innerHTML = '<p class="text-gray-500">No induction materials available</p>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading induction content:', error);
+                    document.getElementById('induction-content').innerHTML = '<p class="text-red-500">Error loading content</p>';
+                });
+        }
+
+        // Load employee data on page load
+        document.addEventListener('DOMContentLoaded', function () {
+            loadEmployeeData();
+        });
+
+        function loadEmployeeData() {
+            fetch('/api/employee/profile')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.profile) {
+                        const emp = data.profile;
+                        document.getElementById('emp-id').textContent = emp.employee_id;
+                        document.getElementById('emp-contact').textContent = emp.contact_number;
+                        document.getElementById('emp-location').textContent = emp.location;
+                        document.getElementById('emp-joined').textContent = emp.joined_date;
+                        document.getElementById('sick-leaves').textContent = emp.leaves_sick;
+                        document.getElementById('personal-leaves').textContent = emp.leaves_personal;
+                        document.getElementById('comp-off').textContent = emp.comp_off;
+                    }
+                })
+                .catch(error => console.error('Error loading employee data:', error));
         }
     </script>
-
-    
-
 </body>
+
 </html>

@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+  <div class="max-w-2xl w-full bg-white rounded-2xl shadow-xl overflow-hidden">
+    <!-- Success Header -->
+    <div class="bg-gradient-to-r from-green-500 to-emerald-600 p-8 text-center">
+      <div class="w-20 h-20 bg-white rounded-full flex items-center justify-center mx-auto mb-4">
+        <svg class="w-10 h-10 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+        </svg>
+      </div>
+      <h1 class="text-3xl font-bold text-white mb-2">Leave Request Submitted!</h1>
+      <p class="text-green-100 text-lg">Your leave request has been successfully submitted for approval</p>
+    </div>
+
+    <!-- Request Details -->
+    <div class="p-8">
+      <h2 class="text-2xl font-semibold text-gray-800 mb-6 flex items-center">
+        <svg class="w-6 h-6 text-blue-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+          </path>
+        </svg>
+        Request Details
+      </h2>
+
+      <div class="grid md:grid-cols-2 gap-6">
+        <div class="space-y-4">
+          <div class="bg-gray-50 p-4 rounded-lg">
+            <label class="text-sm font-medium text-gray-600">Leave Type</label>
+            <p class="text-lg font-semibold text-gray-800">{{ leave_request.leave_type }}</p>
+          </div>
+
+          {% if leave_request.sub_type %}
+          <div class="bg-gray-50 p-4 rounded-lg">
+            <label class="text-sm font-medium text-gray-600">Sub Type</label>
+            <p class="text-lg font-semibold text-gray-800">{{ leave_request.sub_type }}</p>
+          </div>
+          {% endif %}
+
+          <div class="bg-gray-50 p-4 rounded-lg">
+            <label class="text-sm font-medium text-gray-600">Duration</label>
+            <p class="text-lg font-semibold text-gray-800">{{ leave_request.total_days }} day(s)</p>
+          </div>
+        </div>
+
+        <div class="space-y-4">
+          <div class="bg-gray-50 p-4 rounded-lg">
+            <label class="text-sm font-medium text-gray-600">Start Date</label>
+            <p class="text-lg font-semibold text-gray-800">{{ leave_request.start_date }}</p>
+          </div>
+
+          <div class="bg-gray-50 p-4 rounded-lg">
+            <label class="text-sm font-medium text-gray-600">End Date</label>
+            <p class="text-lg font-semibold text-gray-800">{{ leave_request.end_date }}</p>
+          </div>
+
+          <div class="bg-gray-50 p-4 rounded-lg">
+            <label class="text-sm font-medium text-gray-600">Status</label>
+            <span
+              class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
+              <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+              </svg>
+              Pending Approval
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {% if leave_request.reason %}
+      <div class="mt-6 bg-gray-50 p-4 rounded-lg">
+        <label class="text-sm font-medium text-gray-600">Reason</label>
+        <p class="text-gray-800 mt-1">{{ leave_request.reason }}</p>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Next Steps -->
+    <div class="bg-blue-50 p-6 border-t">
+      <h3 class="text-lg font-semibold text-gray-800 mb-3">What happens next?</h3>
+      <div class="space-y-2 text-gray-600">
+        <div class="flex items-center">
+          <svg class="w-5 h-5 text-blue-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+          </svg>
+          Your manager will review your leave request
+        </div>
+        <div class="flex items-center">
+          <svg class="w-5 h-5 text-blue-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z">
+            </path>
+          </svg>
+          You'll receive an email notification once approved/rejected
+        </div>
+        <div class="flex items-center">
+          <svg class="w-5 h-5 text-blue-500 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2">
+            </path>
+          </svg>
+          Track your request status in the Leave History section
+        </div>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="p-6 bg-gray-50 flex flex-col sm:flex-row gap-3">
+      <a href="/leave-status"
+        class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg text-center transition duration-200 flex items-center justify-center">
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4">
+          </path>
+        </svg>
+        View Leave History
+      </a>
+      <a href="/employee-portal"
+        class="flex-1 bg-gray-600 hover:bg-gray-700 text-white font-medium py-3 px-6 rounded-lg text-center transition duration-200 flex items-center justify-center">
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6">
+          </path>
+        </svg>
+        Back to Dashboard
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}

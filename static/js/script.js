@@ -32,31 +32,31 @@ function sendMessage() {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ prompt: message }),
   })
-  .then(response => {
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder('utf-8');
+    .then(response => {
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder('utf-8');
 
-    function read() {
-      reader.read().then(({ done, value }) => {
-        if (done) {
+      function read() {
+        reader.read().then(({ done, value }) => {
+          if (done) {
+            chatbox.scrollTop = chatbox.scrollHeight;
+            return;
+          }
+          const chunk = decoder.decode(value, { stream: true });
+          botMsg.textContent += chunk;
           chatbox.scrollTop = chatbox.scrollHeight;
-          return;
-        }
-        const chunk = decoder.decode(value, { stream: true });
-        botMsg.textContent += chunk;
-        chatbox.scrollTop = chatbox.scrollHeight;
-        read();
-      });
-    }
+          read();
+        });
+      }
 
-    read();
-  })
-  .catch(() => {
-    const errorMsg = document.createElement('div');
-    errorMsg.className = 'text-left text-red-600';
-    errorMsg.textContent = '⚠️ Failed to connect to server.';
-    chatbox.appendChild(errorMsg);
-  });
+      read();
+    })
+    .catch(() => {
+      const errorMsg = document.createElement('div');
+      errorMsg.className = 'text-left text-red-600';
+      errorMsg.textContent = '⚠️ Failed to connect to server.';
+      chatbox.appendChild(errorMsg);
+    });
 }
 
 // Tabs and Sections
@@ -161,26 +161,26 @@ document.addEventListener("DOMContentLoaded", () => {
 
 
 
-  function showServiceTab(id, btn) {
-    // Hide all content
-    document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
+function showServiceTab(id, btn) {
+  // Hide all content
+  document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
 
-    // Show the selected tab content
-    document.getElementById(id).classList.remove('hidden');
+  // Show the selected tab content
+  document.getElementById(id).classList.remove('hidden');
 
-    // Reset all tab buttons
-    document.querySelectorAll('.s-tab-btn').forEach(button => {
-      button.classList.remove('active-tab');
-    });
-
-    // Mark clicked tab as active
-    btn.classList.add('active-tab');
-  }
-
-  // Optional: Show first tab on page load
-  document.addEventListener('DOMContentLoaded', () => {
-    const defaultTab = document.querySelector('.s-tab-btn');
-    showServiceTab('s-ai', defaultTab);
+  // Reset all tab buttons
+  document.querySelectorAll('.s-tab-btn').forEach(button => {
+    button.classList.remove('active-tab');
   });
+
+  // Mark clicked tab as active
+  btn.classList.add('active-tab');
+}
+
+// Optional: Show first tab on page load
+document.addEventListener('DOMContentLoaded', () => {
+  const defaultTab = document.querySelector('.s-tab-btn');
+  showServiceTab('s-ai', defaultTab);
+});
 
 

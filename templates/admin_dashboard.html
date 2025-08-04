@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard - NexIQoN</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+
+<body class="bg-gray-100 min-h-screen">
+  <!-- Navigation -->
+  <nav class="bg-white shadow-lg">
+    <div class="max-w-7xl mx-auto px-4">
+      <div class="flex justify-between h-16">
+        <div class="flex items-center">
+          <div class="flex-shrink-0">
+            <h1 class="text-xl font-bold text-purple-600">NexIQoN Admin</h1>
+          </div>
+        </div>
+        <div class="flex items-center space-x-4">
+          <span class="text-gray-700">Welcome, {{ user_name }}</span>
+          <a href="/logout" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded">
+            Logout
+          </a>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+    <!-- Dashboard Header -->
+    <div class="mb-8">
+      <h2 class="text-3xl font-bold text-gray-900">Admin Dashboard</h2>
+      <p class="mt-2 text-gray-600">Manage all aspects of the NexIQoN portal</p>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+      <div class="bg-white overflow-hidden shadow rounded-lg">
+        <div class="p-5">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <i class="fas fa-users text-blue-500 text-2xl"></i>
+            </div>
+            <div class="ml-5 w-0 flex-1">
+              <dl>
+                <dt class="text-sm font-medium text-gray-500 truncate">Total Employees</dt>
+                <dd class="text-lg font-medium text-gray-900" id="total-employees">--</dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white overflow-hidden shadow rounded-lg">
+        <div class="p-5">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <i class="fas fa-ticket-alt text-green-500 text-2xl"></i>
+            </div>
+            <div class="ml-5 w-0 flex-1">
+              <dl>
+                <dt class="text-sm font-medium text-gray-500 truncate">Open Tickets</dt>
+                <dd class="text-lg font-medium text-gray-900" id="open-tickets">--</dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white overflow-hidden shadow rounded-lg">
+        <div class="p-5">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <i class="fas fa-calendar-alt text-yellow-500 text-2xl"></i>
+            </div>
+            <div class="ml-5 w-0 flex-1">
+              <dl>
+                <dt class="text-sm font-medium text-gray-500 truncate">Pending Leave Requests</dt>
+                <dd class="text-lg font-medium text-gray-900" id="pending-leaves">--</dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white overflow-hidden shadow rounded-lg">
+        <div class="p-5">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <i class="fas fa-briefcase text-purple-500 text-2xl"></i>
+            </div>
+            <div class="ml-5 w-0 flex-1">
+              <dl>
+                <dt class="text-sm font-medium text-gray-500 truncate">Active Job Postings</dt>
+                <dd class="text-lg font-medium text-gray-900" id="job-postings">--</dd>
+              </dl>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Portal Access Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <!-- Employee Portal -->
+      <div class="bg-white overflow-hidden shadow rounded-lg hover:shadow-lg transition-shadow duration-300">
+        <div class="p-6">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-user text-blue-600 text-xl"></i>
+              </div>
+            </div>
+            <div class="ml-4">
+              <h3 class="text-lg font-medium text-gray-900">Employee Portal</h3>
+              <p class="text-sm text-gray-500">Dashboard, timesheets, leave requests</p>
+            </div>
+          </div>
+          <div class="mt-4">
+            <a href="/employee-portal"
+              class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+              Access Portal
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- HR Management Portal -->
+      <div class="bg-white overflow-hidden shadow rounded-lg hover:shadow-lg transition-shadow duration-300">
+        <div class="p-6">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-users-cog text-green-600 text-xl"></i>
+              </div>
+            </div>
+            <div class="ml-4">
+              <h3 class="text-lg font-medium text-gray-900">HR Management</h3>
+              <p class="text-sm text-gray-500">Employee management, onboarding, ATS</p>
+            </div>
+          </div>
+          <div class="mt-4">
+            <a href="/hr-portal"
+              class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700">
+              Access Portal
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- IT Help Desk -->
+      <div class="bg-white overflow-hidden shadow rounded-lg hover:shadow-lg transition-shadow duration-300">
+        <div class="p-6">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-tools text-yellow-600 text-xl"></i>
+              </div>
+            </div>
+            <div class="ml-4">
+              <h3 class="text-lg font-medium text-gray-900">IT Help Desk</h3>
+              <p class="text-sm text-gray-500">Tickets, asset management, support</p>
+            </div>
+          </div>
+          <div class="mt-4">
+            <a href="/it-portal"
+              class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-yellow-600 hover:bg-yellow-700">
+              Access Portal
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Career Portal -->
+      <div class="bg-white overflow-hidden shadow rounded-lg hover:shadow-lg transition-shadow duration-300">
+        <div class="p-6">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                <i class="fas fa-graduation-cap text-purple-600 text-xl"></i>
+              </div>
+            </div>
+            <div class="ml-4">
+              <h3 class="text-lg font-medium text-gray-900">Career Portal</h3>
+              <p class="text-sm text-gray-500">Courses, certifications, badges</p>
+            </div>
+          </div>
+          <div class="mt-4">
+            <a href="/career-portal"
+              class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700">
+              Access Portal
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="mt-8">
+      <div class="bg-white shadow rounded-lg">
+        <div class="px-4 py-5 sm:p-6">
+          <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Recent System Activity</h3>
+          <div class="flow-root">
+            <ul class="-mb-8" id="recent-activity">
+              <!-- Activity items will be loaded here -->
+              <li class="text-gray-500 text-center py-4">Loading recent activity...</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Load dashboard statistics
+    document.addEventListener('DOMContentLoaded', function () {
+      loadDashboardStats();
+      loadRecentActivity();
+    });
+
+    function loadDashboardStats() {
+      fetch('/api/admin/dashboard-stats')
+        .then(response => response.json())
+        .then(data => {
+          document.getElementById('total-employees').textContent = data.total_employees || '0';
+          document.getElementById('open-tickets').textContent = data.open_tickets || '0';
+          document.getElementById('pending-leaves').textContent = data.pending_leaves || '0';
+          document.getElementById('job-postings').textContent = data.job_postings || '0';
+        })
+        .catch(error => {
+          console.error('Error loading dashboard stats:', error);
+        });
+    }
+
+    function loadRecentActivity() {
+      fetch('/api/admin/recent-activity')
+        .then(response => response.json())
+        .then(data => {
+          const activityList = document.getElementById('recent-activity');
+          if (data.activities && data.activities.length > 0) {
+            activityList.innerHTML = data.activities.map(activity => `
+                            <li class="relative pb-8">
+                                <div class="relative flex space-x-3">
+                                    <div class="flex-shrink-0">
+                                        <div class="h-8 w-8 rounded-full bg-${activity.color}-500 flex items-center justify-center">
+                                            <i class="${activity.icon} text-white text-sm"></i>
+                                        </div>
+                                    </div>
+                                    <div class="min-w-0 flex-1">
+                                        <div>
+                                            <p class="text-sm text-gray-900">${activity.description}</p>
+                                            <p class="text-xs text-gray-500">${activity.timestamp}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </li>
+                        `).join('');
+          } else {
+            activityList.innerHTML = '<li class="text-gray-500 text-center py-4">No recent activity</li>';
+          }
+        })
+        .catch(error => {
+          console.error('Error loading recent activity:', error);
+          document.getElementById('recent-activity').innerHTML = '<li class="text-red-500 text-center py-4">Error loading activity</li>';
+        });
+    }
+  </script>
+</body>
+
+</html>

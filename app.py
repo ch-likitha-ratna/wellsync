@@ -176,38 +176,81 @@ def submit_leave():
     try:
         leave_type = request.form.get('leave_type')
         sub_type = request.form.get('sub_type')
-        start_date = request.form.get('start_date')
-        end_date = request.form.get('end_date')
-        reason = request.form.get('reason')
-        
-        # Validate dates
-        if not start_date or not end_date:
-            flash('Please provide both start and end dates', 'error')
-            return redirect(url_for('employee_portal'))
-        
-        # Calculate total days
-        total_days = calculate_work_days(start_date, end_date)
-        
-        # Insert leave request
-        query = """
-        INSERT INTO leave_requests (employee_id, leave_type, sub_type, start_date, end_date, reason, status)
-        VALUES (%s, %s, %s, %s, %s, %s, 'Pending')
-        """
-        db.execute_query(query, (session['user_id'], leave_type, sub_type, start_date, end_date, reason))
-        
-        # Log activity
-        log_user_activity(session['user_id'], 'Leave Request Submitted', f'Leave request for {start_date} to {end_date}', db)
-        
-        flash('Leave request submitted successfully', 'success')
-        return redirect(url_for('employee_portal'))
-        
-    except Exception as e:
-        logging.error(f"Error submitting leave request: {e}")
-        flash('Error submitting leave request', 'error')
-        return redirect(url_for('employee_portal'))
-
-@app.route('/employee/submit-timesheet', methods=['POST'])
-@login_required
+        try:
+            # Get form data
+            leave_type = request.form.get('leave_type')
+            sub_type = request.form.get('sub_type') if leave_type == 'Paid' else None
+            start_date = request.form.get('start_date')
+            end_date = request.form.get('end_date')
+            reason = request.form.get('reason', '')
+            
+            # Validate required fields
+            if not all([leave_type, start_date, end_date]):
+                flash('Please fill in all required fields.', 'error')
+                return redirect(url_for('submit_leave'))
+            
+            # Validate dates
+            try:
+                start_dt = datetime.strptime(start_date, '%Y-%m-%d').date()
+                end_dt = datetime.strptime(end_date, '%Y-%m-%d').date()
+                
+                if start_dt > end_dt:
+                    flash('Start date cannot be after end date.', 'error')
+                    return redirect(url_for('submit_leave'))
+                    
+                if start_dt < datetime.now().date():
+                    flash('Cannot request leave for past dates.', 'error')
+                    return redirect(url_for('submit_leave'))
+                    
+            except ValueError:
+                flash('Invalid date format.', 'error')
+                return redirect(url_for('submit_leave'))
+            
+            # Insert into database
+            query = """
+            INSERT INTO leave_requests (employee_id, leave_type, sub_type, start_date, end_date, reason, status, created_at)
+            VALUES (%s, %s, %s, %s, %s, %s, 'Pending', NOW())
+            """
+            
+            result = db.execute_query(query, (
+                session['user_id'], 
+                leave_type, 
+                sub_type, 
+                start_date, 
+                end_date, 
+                reason
+            ))
+            
+            if result is not None:
+                # Get the inserted leave request for confirmation
+                leave_query = """
+                SELECT lr.*, e.first_name, e.last_name 
+                FROM leave_requests lr
+                JOIN employee e ON lr.employee_id = e.employee_id
+                WHERE lr.employee_id = %s 
+                ORDER BY lr.created_at DESC 
+                LIMIT 1
+                """
+                leave_data = db.execute_query(leave_query, (session['user_id'],))
+                
+                if leave_data:
+                    # Log activity
+                    log_user_activity(session['user_id'], 'Leave Request Submitted', 
+                                    f'Leave type: {leave_type}, Dates: {start_date} to {end_date}', db)
+                    
+                    flash('Leave request submitted successfully!', 'success')
+                    return render_template('leave_confirmation.html', leave_request=leave_data[0])
+                else:
+                    flash('Leave request submitted but confirmation failed.', 'warning')
+                    return redirect(url_for('leave_status'))
+            else:
+                flash('Failed to submit leave request. Please try again.', 'error')
+                return redirect(url_for('submit_leave'))
+                
+        except Exception as e:
+            logging.error(f"Leave request submission error: {str(e)}")
+            flash(f'Error submitting leave request: {str(e)}', 'error')
+            return redirect(url_for('submit_leave'))
 def submit_timesheet():
     try:
         week_start = request.form.get('week_start')

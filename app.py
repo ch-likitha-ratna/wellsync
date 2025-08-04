@@ -251,6 +251,20 @@ def submit_leave():
             logging.error(f"Leave request submission error: {str(e)}")
             flash(f'Error submitting leave request: {str(e)}', 'error')
             return redirect(url_for('submit_leave'))
+
+@app.route('/leave-status')
+@login_required
+def leave_status():
+    query = """
+    SELECT * FROM leave_requests 
+    WHERE employee_id = %s 
+    ORDER BY created_at DESC
+    """
+    leave_requests = db.execute_query(query, (session['user_id'],))
+    return render_template('leave_status.html', leave_requests=leave_requests or [])
+
+@app.route('/submit-timesheet', methods=['POST'])
+@login_required
 def submit_timesheet():
     try:
         week_start = request.form.get('week_start')
